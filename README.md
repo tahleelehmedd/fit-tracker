@@ -77,4 +77,4 @@ The app switches phases automatically based on day count.
 
 ## Goal
 
-Lose 8-10kg by 20 Aug 2026. Reverse Grade 1 fatty liver. Normalize ALT.
+Lose 8-10kg by 10 Weeks.

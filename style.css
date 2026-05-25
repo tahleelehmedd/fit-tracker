@@ -745,3 +745,140 @@ textarea::placeholder {
   padding: 20px 0;
   font-size: 14px;
 }
+
+/* ===== PIN LOCK SCREEN ===== */
+.hidden {
+  display: none !important;
+}
+
+.lock-screen {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  padding-top: calc(40px + var(--safe-top));
+  padding-bottom: calc(20px + var(--safe-bottom));
+}
+
+.lock-inner {
+  width: 100%;
+  max-width: 320px;
+  text-align: center;
+}
+
+.lock-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.lock-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0 0 6px;
+  color: var(--text);
+}
+
+.lock-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 32px;
+}
+
+.pin-dots {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin-bottom: 12px;
+}
+
+.pin-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--text-tertiary);
+  background: transparent;
+  transition: all 0.15s;
+}
+
+.pin-dot.filled {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.pin-error {
+  height: 20px;
+  font-size: 13px;
+  color: var(--danger);
+  margin-bottom: 16px;
+  transition: opacity 0.2s;
+}
+
+.pin-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin: 12px auto 24px;
+  max-width: 280px;
+}
+
+.pin-key {
+  background: var(--bg-elevated);
+  border: none;
+  color: var(--text);
+  font-size: 26px;
+  font-weight: 400;
+  font-family: inherit;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.08s, background 0.15s;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pin-key:active {
+  transform: scale(0.92);
+  background: var(--accent);
+}
+
+.pin-key-empty {
+  background: transparent;
+  pointer-events: none;
+}
+
+.pin-key-back {
+  font-size: 20px;
+  background: transparent;
+}
+
+.pin-reset-btn {
+  background: none;
+  border: none;
+  color: var(--text-tertiary);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 8px 16px;
+  text-decoration: underline;
+}
+
+.pin-reset-btn:active {
+  color: var(--danger);
+}
+
+.shake {
+  animation: shake 0.4s;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}

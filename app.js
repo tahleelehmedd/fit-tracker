@@ -2,6 +2,170 @@
    FIT TRACKER APP
    ================== */
 
+// ===== PIN LOCK =====
+const PIN_KEY = 'fit:pin';
+const PIN_SESSION_KEY = 'fit:unlocked';
+const SESSION_DURATION = 1000 * 60 * 60 * 4; // 4 hours
+
+const PinLock = {
+  buffer: '',
+  mode: 'verify', // 'setup', 'confirm', 'verify'
+  firstPin: '',
+
+  async hash(pin) {
+    const enc = new TextEncoder();
+    const data = enc.encode(pin + ':fit-tracker-salt-2026');
+    const buf = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(buf))
+      .map(b => b.toString(16).padStart(2, '0')).join('');
+  },
+
+  hasPin() {
+    return !!localStorage.getItem(PIN_KEY);
+  },
+
+  isUnlocked() {
+    const ts = parseInt(sessionStorage.getItem(PIN_SESSION_KEY) || '0');
+    return ts && (Date.now() - ts < SESSION_DURATION);
+  },
+
+  markUnlocked() {
+    sessionStorage.setItem(PIN_SESSION_KEY, Date.now().toString());
+  },
+
+  async init() {
+    const lockScreen = document.getElementById('lock-screen');
+    const appEl = document.getElementById('app');
+
+    if (this.isUnlocked()) {
+      lockScreen.classList.add('hidden');
+      appEl.classList.remove('hidden');
+      return true;
+    }
+
+    lockScreen.classList.remove('hidden');
+    appEl.classList.add('hidden');
+
+    if (this.hasPin()) {
+      this.mode = 'verify';
+      this.updateUI('Enter PIN', '4 digits to unlock');
+    } else {
+      this.mode = 'setup';
+      this.updateUI('Set a PIN', 'Choose 4 digits — you\'ll need this each time');
+    }
+
+    this.bindEvents();
+    return false;
+  },
+
+  bindEvents() {
+    document.querySelectorAll('.pin-key[data-digit]').forEach(btn => {
+      btn.addEventListener('click', () => this.press(btn.dataset.digit));
+    });
+    document.getElementById('pin-back').addEventListener('click', () => this.backspace());
+    document.getElementById('pin-reset-btn').addEventListener('click', () => this.resetApp());
+  },
+
+  press(digit) {
+    if (this.buffer.length >= 4) return;
+    this.buffer += digit;
+    this.renderDots();
+    this.clearError();
+    if (this.buffer.length === 4) {
+      setTimeout(() => this.submit(), 150);
+    }
+  },
+
+  backspace() {
+    this.buffer = this.buffer.slice(0, -1);
+    this.renderDots();
+    this.clearError();
+  },
+
+  renderDots() {
+    document.querySelectorAll('.pin-dot').forEach((dot, i) => {
+      dot.classList.toggle('filled', i < this.buffer.length);
+    });
+  },
+
+  showError(msg) {
+    const el = document.getElementById('pin-error');
+    el.textContent = msg;
+    document.getElementById('pin-dots').classList.add('shake');
+    setTimeout(() => document.getElementById('pin-dots').classList.remove('shake'), 400);
+  },
+
+  clearError() {
+    document.getElementById('pin-error').textContent = '';
+  },
+
+  updateUI(title, subtitle) {
+    document.getElementById('lock-title').textContent = title;
+    document.getElementById('lock-subtitle').textContent = subtitle;
+    this.buffer = '';
+    this.renderDots();
+    this.clearError();
+  },
+
+  async submit() {
+    if (this.mode === 'setup') {
+      this.firstPin = this.buffer;
+      this.mode = 'confirm';
+      this.updateUI('Confirm PIN', 'Re-enter the same 4 digits');
+    } else if (this.mode === 'confirm') {
+      if (this.buffer === this.firstPin) {
+        const hashed = await this.hash(this.buffer);
+        localStorage.setItem(PIN_KEY, hashed);
+        this.unlock();
+      } else {
+        this.showError('PINs don\'t match. Try again.');
+        this.mode = 'setup';
+        this.firstPin = '';
+        setTimeout(() => this.updateUI('Set a PIN', 'Choose 4 digits'), 600);
+      }
+    } else if (this.mode === 'verify') {
+      const hashed = await this.hash(this.buffer);
+      const stored = localStorage.getItem(PIN_KEY);
+      if (hashed === stored) {
+        this.unlock();
+      } else {
+        this.showError('Wrong PIN. Try again.');
+        setTimeout(() => { this.buffer = ''; this.renderDots(); }, 400);
+      }
+    }
+  },
+
+  unlock() {
+    this.markUnlocked();
+    document.getElementById('lock-screen').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    if (typeof render === 'function') render();
+  },
+
+  resetApp() {
+    const confirmed = confirm(
+      'This will delete your PIN and ALL your tracking data.\n\n' +
+      'Are you sure? This cannot be undone.'
+    );
+    if (!confirmed) return;
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && (k.startsWith('fit:') || k === PIN_KEY)) keys.push(k);
+    }
+    keys.forEach(k => localStorage.removeItem(k));
+    sessionStorage.clear();
+    location.reload();
+  }
+};
+
+// Re-lock when app is hidden for a while (returning from background)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && PinLock.hasPin() && !PinLock.isUnlocked()) {
+    location.reload();
+  }
+});
+
 // ===== PLAN DATA =====
 const START_DATE = '2026-05-25';
 const TARGET_DATE = '2026-08-20';
@@ -87,12 +251,10 @@ const NUTRITION_PLAN = [
 
 const HABITS_PLAN = [
   { id: 'h1', title: 'Morning weight (Mondays)', meta: 'Same time, before food' },
-  { id: 'h2', title: 'Vitamin D3', meta: 'With breakfast' },
-  { id: 'h3', title: 'Omega-3 fish oil', meta: '1–2g with food' },
-  { id: 'h4', title: 'Thyroid medication', meta: '7.5mg · empty stomach' },
   { id: 'h5', title: 'No soft drinks, juice, or fried food', meta: 'Liver-critical' },
   { id: 'h6', title: 'Morning mobility (10 min)', meta: 'Hip flexor + glute bridge + dead bug' },
-  { id: 'h7', title: '7+ hours sleep target', meta: '' }
+  { id: 'h7', title: '7+ hours sleep target', meta: '' },
+  { id: 'h8', title: '7,000+ steps', meta: 'Walking helps liver fat reduction' }
 ];
 
 const YOUTUBE_SEARCHES = [
@@ -701,7 +863,9 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 // ===== INIT =====
-render();
+PinLock.init().then(unlocked => {
+  if (unlocked) render();
+});
 
 // Service worker for offline
 if ('serviceWorker' in navigator) {

@@ -14,7 +14,38 @@
 </head>
 <body>
 
-<div id="app">
+<!-- PIN LOCK SCREEN -->
+<div id="lock-screen" class="lock-screen hidden">
+  <div class="lock-inner">
+    <div class="lock-icon">🔒</div>
+    <h2 class="lock-title" id="lock-title">Enter PIN</h2>
+    <p class="lock-subtitle" id="lock-subtitle">4 digits to unlock</p>
+    <div class="pin-dots" id="pin-dots">
+      <div class="pin-dot"></div>
+      <div class="pin-dot"></div>
+      <div class="pin-dot"></div>
+      <div class="pin-dot"></div>
+    </div>
+    <div class="pin-error" id="pin-error"></div>
+    <div class="pin-pad" id="pin-pad">
+      <button class="pin-key" data-digit="1">1</button>
+      <button class="pin-key" data-digit="2">2</button>
+      <button class="pin-key" data-digit="3">3</button>
+      <button class="pin-key" data-digit="4">4</button>
+      <button class="pin-key" data-digit="5">5</button>
+      <button class="pin-key" data-digit="6">6</button>
+      <button class="pin-key" data-digit="7">7</button>
+      <button class="pin-key" data-digit="8">8</button>
+      <button class="pin-key" data-digit="9">9</button>
+      <button class="pin-key pin-key-empty"></button>
+      <button class="pin-key" data-digit="0">0</button>
+      <button class="pin-key pin-key-back" id="pin-back">⌫</button>
+    </div>
+    <button class="pin-reset-btn" id="pin-reset-btn">Forgot PIN? Reset app</button>
+  </div>
+</div>
+
+<div id="app" class="hidden">
 
   <!-- HEADER -->
   <header class="app-header">

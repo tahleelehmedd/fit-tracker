@@ -179,27 +179,27 @@ const PHASES = {
     weeks: '1–3',
     description: 'Mobility, posture, bodyweight only. No heavy weights yet. Goal: wake the body up safely.',
     workout: [
-      { id: 'w0', title: 'Warm-up: 5 min treadmill walk', meta: 'Speed 5.0 km/h, incline 2%' },
-      { id: 'w1', title: 'Cat-Cow', meta: '10 slow reps' },
-      { id: 'w2', title: "Child's pose", meta: 'Hold 45 sec' },
-      { id: 'w3', title: 'Kneeling hip flexor stretch', meta: '45 sec each side · critical for sciatica' },
-      { id: 'w4', title: 'Seated piriformis stretch', meta: '45 sec each side' },
-      { id: 'w5', title: 'Glute bridge', meta: '15 reps · activates dormant glutes' },
-      { id: 'w6', title: 'Dead bug', meta: '8 reps each side' },
-      { id: 'w7', title: 'Bird dog', meta: '8 reps each side' },
-      { id: 'w8', title: 'Wall angels', meta: '10 reps' },
-      { id: 'w9', title: 'R1: Bodyweight squat', meta: '12 reps' },
-      { id: 'w10', title: 'R1: Incline push-up', meta: '8–10 reps' },
-      { id: 'w11', title: 'R1: Reverse lunge', meta: '6 each leg · step BACK' },
-      { id: 'w12', title: 'R1: Cable row (light)', meta: '12 reps · 5–10 kg' },
-      { id: 'w13', title: 'R1: Plank', meta: '20 sec' },
-      { id: 'w14', title: 'R2: Squat', meta: '12 reps' },
-      { id: 'w15', title: 'R2: Push-up', meta: '8–10 reps' },
-      { id: 'w16', title: 'R2: Lunge', meta: '6 each leg' },
-      { id: 'w17', title: 'R2: Cable row', meta: '12 reps' },
-      { id: 'w18', title: 'R2: Plank', meta: '25 sec' },
-      { id: 'w19', title: '10 min incline walk', meta: '5.5 km/h, 5% incline' },
-      { id: 'w20', title: 'Cool-down stretches', meta: 'Forward fold + figure-4' }
+      { id: 'w0', title: 'Warm-up: 5 min treadmill walk', meta: 'Speed 5.0 km/h, incline 2%', video: null },
+      { id: 'w1', title: 'Cat-Cow', meta: '10 slow reps', video: 'cat cow stretch beginner tutorial' },
+      { id: 'w2', title: "Child's pose", meta: 'Hold 45 sec', video: 'childs pose yoga stretch beginner' },
+      { id: 'w3', title: 'Kneeling hip flexor stretch', meta: '45 sec each side · critical for sciatica', video: 'kneeling hip flexor stretch sciatica' },
+      { id: 'w4', title: 'Seated piriformis stretch', meta: '45 sec each side', video: 'seated piriformis stretch sciatica' },
+      { id: 'w5', title: 'Glute bridge', meta: '15 reps · activates dormant glutes', video: 'glute bridge proper form beginner' },
+      { id: 'w6', title: 'Dead bug', meta: '8 reps each side', video: 'dead bug exercise tutorial beginner' },
+      { id: 'w7', title: 'Bird dog', meta: '8 reps each side', video: 'bird dog exercise tutorial proper form' },
+      { id: 'w8', title: 'Wall angels', meta: '10 reps', video: 'wall angels posture exercise tutorial' },
+      { id: 'w9', title: 'R1: Bodyweight squat', meta: '12 reps', video: 'bodyweight squat proper form beginner' },
+      { id: 'w10', title: 'R1: Incline push-up', meta: '8–10 reps', video: 'incline push up beginner bench tutorial' },
+      { id: 'w11', title: 'R1: Reverse lunge', meta: '6 each leg · step BACK', video: 'reverse lunge tutorial proper form' },
+      { id: 'w12', title: 'R1: Cable row (light)', meta: '12 reps · 5–10 kg', video: 'standing cable row tutorial' },
+      { id: 'w13', title: 'R1: Plank', meta: '20 sec', video: 'how to do a proper plank' },
+      { id: 'w14', title: 'R2: Squat', meta: '12 reps', video: 'bodyweight squat proper form beginner' },
+      { id: 'w15', title: 'R2: Push-up', meta: '8–10 reps', video: 'incline push up beginner bench tutorial' },
+      { id: 'w16', title: 'R2: Lunge', meta: '6 each leg', video: 'reverse lunge tutorial proper form' },
+      { id: 'w17', title: 'R2: Cable row', meta: '12 reps', video: 'standing cable row tutorial' },
+      { id: 'w18', title: 'R2: Plank', meta: '25 sec', video: 'how to do a proper plank' },
+      { id: 'w19', title: '10 min incline walk', meta: '5.5 km/h, 5% incline', video: null },
+      { id: 'w20', title: 'Cool-down stretches', meta: 'Forward fold + figure-4', video: 'figure 4 stretch lying down' }
     ]
   },
   1: {
@@ -207,17 +207,17 @@ const PHASES = {
     weeks: '4–7',
     description: 'Light weights added. Compound movements with focus on form.',
     workout: [
-      { id: 'w0', title: 'Warm-up: 8 min cardio', meta: 'Treadmill or bike' },
-      { id: 'w1', title: 'Mobility flow', meta: 'Cat-cow, hip flexor, glute bridge' },
-      { id: 'w2', title: 'Goblet squat', meta: '3 × 10 · light dumbbell' },
-      { id: 'w3', title: 'Romanian deadlift (light)', meta: '3 × 10 · hinge, neutral spine' },
-      { id: 'w4', title: 'Dumbbell bench press', meta: '3 × 10' },
-      { id: 'w5', title: 'Lat pulldown', meta: '3 × 12' },
-      { id: 'w6', title: 'Standing shoulder press', meta: '3 × 10 · dumbbells' },
-      { id: 'w7', title: 'Standing cable row', meta: '3 × 12' },
-      { id: 'w8', title: 'Plank', meta: '3 × 40 sec' },
-      { id: 'w9', title: 'Dead hang', meta: '3 × 20 sec · spine decompression' },
-      { id: 'w10', title: '20 min incline walk', meta: '6 km/h, 6% incline' }
+      { id: 'w0', title: 'Warm-up: 8 min cardio', meta: 'Treadmill or bike', video: null },
+      { id: 'w1', title: 'Mobility flow', meta: 'Cat-cow, hip flexor, glute bridge', video: 'mobility warm up routine gym' },
+      { id: 'w2', title: 'Goblet squat', meta: '3 × 10 · light dumbbell', video: 'goblet squat proper form tutorial' },
+      { id: 'w3', title: 'Romanian deadlift (light)', meta: '3 × 10 · hinge, neutral spine', video: 'dumbbell romanian deadlift form beginner' },
+      { id: 'w4', title: 'Dumbbell bench press', meta: '3 × 10', video: 'dumbbell bench press proper form' },
+      { id: 'w5', title: 'Lat pulldown', meta: '3 × 12', video: 'lat pulldown proper form beginner' },
+      { id: 'w6', title: 'Standing shoulder press', meta: '3 × 10 · dumbbells', video: 'standing dumbbell shoulder press form' },
+      { id: 'w7', title: 'Standing cable row', meta: '3 × 12', video: 'standing cable row tutorial' },
+      { id: 'w8', title: 'Plank', meta: '3 × 40 sec', video: 'how to do a proper plank' },
+      { id: 'w9', title: 'Dead hang', meta: '3 × 20 sec · spine decompression', video: 'dead hang exercise benefits form' },
+      { id: 'w10', title: '20 min incline walk', meta: '6 km/h, 6% incline', video: null }
     ]
   },
   2: {
@@ -225,17 +225,17 @@ const PHASES = {
     weeks: '8–12',
     description: 'Progressive overload. Heavier compounds, drop rest times.',
     workout: [
-      { id: 'w0', title: 'Warm-up: 10 min cardio', meta: 'Moderate pace' },
-      { id: 'w1', title: 'Full mobility routine', meta: '8 min' },
-      { id: 'w2', title: 'Barbell or DB squat', meta: '4 × 8' },
-      { id: 'w3', title: 'Romanian deadlift', meta: '4 × 8' },
-      { id: 'w4', title: 'Incline DB press', meta: '4 × 8' },
-      { id: 'w5', title: 'Pull-up or assisted', meta: '4 × 6–8' },
-      { id: 'w6', title: 'Standing OHP', meta: '3 × 8' },
-      { id: 'w7', title: 'DB row', meta: '3 × 10' },
-      { id: 'w8', title: 'Walking lunge', meta: '3 × 10 each' },
-      { id: 'w9', title: 'Core circuit', meta: 'Plank + dead bug + bird dog' },
-      { id: 'w10', title: '25 min cardio', meta: 'HIIT or steady incline' }
+      { id: 'w0', title: 'Warm-up: 10 min cardio', meta: 'Moderate pace', video: null },
+      { id: 'w1', title: 'Full mobility routine', meta: '8 min', video: 'full body mobility routine 8 minutes' },
+      { id: 'w2', title: 'Barbell or DB squat', meta: '4 × 8', video: 'barbell back squat proper form beginner' },
+      { id: 'w3', title: 'Romanian deadlift', meta: '4 × 8', video: 'romanian deadlift barbell tutorial' },
+      { id: 'w4', title: 'Incline DB press', meta: '4 × 8', video: 'incline dumbbell bench press form' },
+      { id: 'w5', title: 'Pull-up or assisted', meta: '4 × 6–8', video: 'assisted pull up machine tutorial' },
+      { id: 'w6', title: 'Standing OHP', meta: '3 × 8', video: 'standing overhead press barbell form' },
+      { id: 'w7', title: 'DB row', meta: '3 × 10', video: 'dumbbell row single arm proper form' },
+      { id: 'w8', title: 'Walking lunge', meta: '3 × 10 each', video: 'walking lunge proper form tutorial' },
+      { id: 'w9', title: 'Core circuit', meta: 'Plank + dead bug + bird dog', video: 'core stability circuit beginner' },
+      { id: 'w10', title: '25 min cardio', meta: 'HIIT or steady incline', video: null }
     ]
   }
 };
@@ -396,9 +396,24 @@ function renderTaskList(containerId, items, metaId) {
         <div class="task-title"></div>
         <div class="task-meta"></div>
       </div>
+      <button class="task-video-btn" aria-label="Watch video"></button>
     `;
     row.querySelector('.task-title').textContent = item.title;
     row.querySelector('.task-meta').textContent = item.meta;
+
+    const videoBtn = row.querySelector('.task-video-btn');
+    if (item.video) {
+      videoBtn.innerHTML = '▶';
+      videoBtn.title = 'Watch demo on YouTube';
+      videoBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // don't toggle the checkbox
+        const url = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(item.video);
+        window.open(url, '_blank', 'noopener');
+      });
+    } else {
+      videoBtn.style.display = 'none';
+    }
+
     row.addEventListener('click', () => {
       state.tasks[item.id] = !state.tasks[item.id];
       saveDay(currentDate, state);

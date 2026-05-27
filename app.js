@@ -1,28 +1,27 @@
 /* ==================
-   FIT TRACKER APP
+   FIT TRACKER v5 — APP LOGIC
    ================== */
 
-// ===== PIN LOCK =====
+// ============================================
+// PIN LOCK
+// ============================================
 const PIN_KEY = 'fit:pin';
 const PIN_SESSION_KEY = 'fit:unlocked';
 const SESSION_DURATION = 1000 * 60 * 60 * 4; // 4 hours
 
 const PinLock = {
   buffer: '',
-  mode: 'verify', // 'setup', 'confirm', 'verify'
+  mode: 'verify',
   firstPin: '',
 
   async hash(pin) {
     const enc = new TextEncoder();
     const data = enc.encode(pin + ':fit-tracker-salt-2026');
     const buf = await crypto.subtle.digest('SHA-256', data);
-    return Array.from(new Uint8Array(buf))
-      .map(b => b.toString(16).padStart(2, '0')).join('');
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
   },
 
-  hasPin() {
-    return !!localStorage.getItem(PIN_KEY);
-  },
+  hasPin() { return !!localStorage.getItem(PIN_KEY); },
 
   isUnlocked() {
     const ts = parseInt(sessionStorage.getItem(PIN_SESSION_KEY) || '0');
@@ -42,7 +41,6 @@ const PinLock = {
       appEl.classList.remove('hidden');
       return true;
     }
-
     lockScreen.classList.remove('hidden');
     appEl.classList.add('hidden');
 
@@ -51,9 +49,8 @@ const PinLock = {
       this.updateUI('Enter PIN', '4 digits to unlock');
     } else {
       this.mode = 'setup';
-      this.updateUI('Set a PIN', 'Choose 4 digits — you\'ll need this each time');
+      this.updateUI('Set a PIN', 'Choose 4 digits');
     }
-
     this.bindEvents();
     return false;
   },
@@ -71,9 +68,7 @@ const PinLock = {
     this.buffer += digit;
     this.renderDots();
     this.clearError();
-    if (this.buffer.length === 4) {
-      setTimeout(() => this.submit(), 150);
-    }
+    if (this.buffer.length === 4) setTimeout(() => this.submit(), 150);
   },
 
   backspace() {
@@ -89,15 +84,12 @@ const PinLock = {
   },
 
   showError(msg) {
-    const el = document.getElementById('pin-error');
-    el.textContent = msg;
+    document.getElementById('pin-error').textContent = msg;
     document.getElementById('pin-dots').classList.add('shake');
     setTimeout(() => document.getElementById('pin-dots').classList.remove('shake'), 400);
   },
 
-  clearError() {
-    document.getElementById('pin-error').textContent = '';
-  },
+  clearError() { document.getElementById('pin-error').textContent = ''; },
 
   updateUI(title, subtitle) {
     document.getElementById('lock-title').textContent = title;
@@ -118,18 +110,17 @@ const PinLock = {
         localStorage.setItem(PIN_KEY, hashed);
         this.unlock();
       } else {
-        this.showError('PINs don\'t match. Try again.');
+        this.showError("PINs don't match");
         this.mode = 'setup';
         this.firstPin = '';
         setTimeout(() => this.updateUI('Set a PIN', 'Choose 4 digits'), 600);
       }
     } else if (this.mode === 'verify') {
       const hashed = await this.hash(this.buffer);
-      const stored = localStorage.getItem(PIN_KEY);
-      if (hashed === stored) {
+      if (hashed === localStorage.getItem(PIN_KEY)) {
         this.unlock();
       } else {
-        this.showError('Wrong PIN. Try again.');
+        this.showError('Wrong PIN');
         setTimeout(() => { this.buffer = ''; this.renderDots(); }, 400);
       }
     }
@@ -139,19 +130,15 @@ const PinLock = {
     this.markUnlocked();
     document.getElementById('lock-screen').classList.add('hidden');
     document.getElementById('app').classList.remove('hidden');
-    if (typeof render === 'function') render();
+    initApp();
   },
 
   resetApp() {
-    const confirmed = confirm(
-      'This will delete your PIN and ALL your tracking data.\n\n' +
-      'Are you sure? This cannot be undone.'
-    );
-    if (!confirmed) return;
+    if (!confirm('This deletes your PIN and ALL tracking data. Continue?')) return;
     const keys = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && (k.startsWith('fit:') || k === PIN_KEY)) keys.push(k);
+      if (k && (k.startsWith('fit:') || k.startsWith('meal-override:') || k === PIN_KEY)) keys.push(k);
     }
     keys.forEach(k => localStorage.removeItem(k));
     sessionStorage.clear();
@@ -159,198 +146,113 @@ const PinLock = {
   }
 };
 
-// Re-lock when app is hidden for a while (returning from background)
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && PinLock.hasPin() && !PinLock.isUnlocked()) {
     location.reload();
   }
 });
 
-// ===== PLAN DATA =====
-const START_DATE = '2026-05-25';
-const TARGET_DATE = '2026-08-20';
-const START_WEIGHT = 78.0;
-const TARGET_WEIGHT = 70.0;
-
-// Phase definitions
-const PHASES = {
-  0: {
-    name: 'Phase 0 · Foundation',
-    weeks: '1–3',
-    description: 'Mobility, posture, bodyweight only. No heavy weights yet. Goal: wake the body up safely.',
-    workout: [
-      { id: 'w0', title: 'Warm-up: 5 min treadmill walk', meta: 'Speed 5.0 km/h, incline 2%', video: null },
-      { id: 'w1', title: 'Cat-Cow', meta: '10 slow reps', video: 'cat cow stretch beginner tutorial' },
-      { id: 'w2', title: "Child's pose", meta: 'Hold 45 sec', video: 'childs pose yoga stretch beginner' },
-      { id: 'w3', title: 'Kneeling hip flexor stretch', meta: '45 sec each side · critical for sciatica', video: 'kneeling hip flexor stretch sciatica' },
-      { id: 'w4', title: 'Seated piriformis stretch', meta: '45 sec each side', video: 'seated piriformis stretch sciatica' },
-      { id: 'w5', title: 'Glute bridge', meta: '15 reps · activates dormant glutes', video: 'glute bridge proper form beginner' },
-      { id: 'w6', title: 'Dead bug', meta: '8 reps each side', video: 'dead bug exercise tutorial beginner' },
-      { id: 'w7', title: 'Bird dog', meta: '8 reps each side', video: 'bird dog exercise tutorial proper form' },
-      { id: 'w8', title: 'Wall angels', meta: '10 reps', video: 'wall angels posture exercise tutorial' },
-      { id: 'w9', title: 'R1: Bodyweight squat', meta: '12 reps', video: 'bodyweight squat proper form beginner' },
-      { id: 'w10', title: 'R1: Incline push-up', meta: '8–10 reps', video: 'incline push up beginner bench tutorial' },
-      { id: 'w11', title: 'R1: Reverse lunge', meta: '6 each leg · step BACK', video: 'reverse lunge tutorial proper form' },
-      { id: 'w12', title: 'R1: Cable row (light)', meta: '12 reps · 5–10 kg', video: 'standing cable row tutorial' },
-      { id: 'w13', title: 'R1: Plank', meta: '20 sec', video: 'how to do a proper plank' },
-      { id: 'w14', title: 'R2: Squat', meta: '12 reps', video: 'bodyweight squat proper form beginner' },
-      { id: 'w15', title: 'R2: Push-up', meta: '8–10 reps', video: 'incline push up beginner bench tutorial' },
-      { id: 'w16', title: 'R2: Lunge', meta: '6 each leg', video: 'reverse lunge tutorial proper form' },
-      { id: 'w17', title: 'R2: Cable row', meta: '12 reps', video: 'standing cable row tutorial' },
-      { id: 'w18', title: 'R2: Plank', meta: '25 sec', video: 'how to do a proper plank' },
-      { id: 'w19', title: '10 min incline walk', meta: '5.5 km/h, 5% incline', video: null },
-      { id: 'w20', title: 'Cool-down stretches', meta: 'Forward fold + figure-4', video: 'figure 4 stretch lying down' }
-    ]
-  },
-  1: {
-    name: 'Phase 1 · Build',
-    weeks: '4–7',
-    description: 'Light weights added. Compound movements with focus on form.',
-    workout: [
-      { id: 'w0', title: 'Warm-up: 8 min cardio', meta: 'Treadmill or bike', video: null },
-      { id: 'w1', title: 'Mobility flow', meta: 'Cat-cow, hip flexor, glute bridge', video: 'mobility warm up routine gym' },
-      { id: 'w2', title: 'Goblet squat', meta: '3 × 10 · light dumbbell', video: 'goblet squat proper form tutorial' },
-      { id: 'w3', title: 'Romanian deadlift (light)', meta: '3 × 10 · hinge, neutral spine', video: 'dumbbell romanian deadlift form beginner' },
-      { id: 'w4', title: 'Dumbbell bench press', meta: '3 × 10', video: 'dumbbell bench press proper form' },
-      { id: 'w5', title: 'Lat pulldown', meta: '3 × 12', video: 'lat pulldown proper form beginner' },
-      { id: 'w6', title: 'Standing shoulder press', meta: '3 × 10 · dumbbells', video: 'standing dumbbell shoulder press form' },
-      { id: 'w7', title: 'Standing cable row', meta: '3 × 12', video: 'standing cable row tutorial' },
-      { id: 'w8', title: 'Plank', meta: '3 × 40 sec', video: 'how to do a proper plank' },
-      { id: 'w9', title: 'Dead hang', meta: '3 × 20 sec · spine decompression', video: 'dead hang exercise benefits form' },
-      { id: 'w10', title: '20 min incline walk', meta: '6 km/h, 6% incline', video: null }
-    ]
-  },
-  2: {
-    name: 'Phase 2 · Push',
-    weeks: '8–12',
-    description: 'Progressive overload. Heavier compounds, drop rest times.',
-    workout: [
-      { id: 'w0', title: 'Warm-up: 10 min cardio', meta: 'Moderate pace', video: null },
-      { id: 'w1', title: 'Full mobility routine', meta: '8 min', video: 'full body mobility routine 8 minutes' },
-      { id: 'w2', title: 'Barbell or DB squat', meta: '4 × 8', video: 'barbell back squat proper form beginner' },
-      { id: 'w3', title: 'Romanian deadlift', meta: '4 × 8', video: 'romanian deadlift barbell tutorial' },
-      { id: 'w4', title: 'Incline DB press', meta: '4 × 8', video: 'incline dumbbell bench press form' },
-      { id: 'w5', title: 'Pull-up or assisted', meta: '4 × 6–8', video: 'assisted pull up machine tutorial' },
-      { id: 'w6', title: 'Standing OHP', meta: '3 × 8', video: 'standing overhead press barbell form' },
-      { id: 'w7', title: 'DB row', meta: '3 × 10', video: 'dumbbell row single arm proper form' },
-      { id: 'w8', title: 'Walking lunge', meta: '3 × 10 each', video: 'walking lunge proper form tutorial' },
-      { id: 'w9', title: 'Core circuit', meta: 'Plank + dead bug + bird dog', video: 'core stability circuit beginner' },
-      { id: 'w10', title: '25 min cardio', meta: 'HIIT or steady incline', video: null }
-    ]
-  }
-};
-
-const NUTRITION_PLAN = [
-  { id: 'n1', title: 'Breakfast', meta: '3 eggs + 2 whites scrambled · multigrain toast · ½ avocado · black coffee' },
-  { id: 'n2', title: 'Mid-morning', meta: 'Greek yogurt + walnuts + small apple' },
-  { id: 'n3', title: 'Lunch', meta: '150g grilled chicken/fish · 1 chapati or ½ cup brown rice · large salad' },
-  { id: 'n4', title: 'Pre-workout', meta: '1 banana + black coffee · 30–45 min before gym' },
-  { id: 'n5', title: 'Post-workout', meta: '1 scoop whey + water OR Greek yogurt + walnuts' },
-  { id: 'n6', title: 'Dinner', meta: '150g grilled fish/chicken · roasted veg · no rice if had at lunch' }
-];
-
-const HABITS_PLAN = [
-  { id: 'h1', title: 'Morning weight (Mondays)', meta: 'Same time, before food' },
-  { id: 'h5', title: 'No soft drinks, juice, or fried food', meta: 'Liver-critical' },
-  { id: 'h6', title: 'Morning mobility (10 min)', meta: 'Hip flexor + glute bridge + dead bug' },
-  { id: 'h7', title: '7+ hours sleep target', meta: '' },
-  { id: 'h8', title: '7,000+ steps', meta: 'Walking helps liver fat reduction' }
-];
-
-const YOUTUBE_SEARCHES = [
-  'cat cow stretch beginner',
-  'kneeling hip flexor stretch sciatica',
-  'seated piriformis stretch',
-  'glute bridge proper form',
-  'dead bug exercise tutorial',
-  'bird dog exercise tutorial',
-  'wall angels posture',
-  'bodyweight squat form',
-  'incline push up beginner',
-  'reverse lunge tutorial',
-  'cable row standing',
-  'dumbbell romanian deadlift',
-  'lat pulldown proper form',
-  'goblet squat tutorial',
-  'Bob and Brad sciatica stretches'
-];
-
-// ===== STATE MANAGEMENT =====
+// ============================================
+// STATE
+// ============================================
 let currentDate = new Date();
 currentDate.setHours(0, 0, 0, 0);
-
-function dateKey(d) {
-  const yr = d.getFullYear();
-  const mo = String(d.getMonth() + 1).padStart(2, '0');
-  const dy = String(d.getDate()).padStart(2, '0');
-  return `${yr}-${mo}-${dy}`;
-}
-
-function dayNumber(d) {
-  const start = new Date(START_DATE);
-  start.setHours(0, 0, 0, 0);
-  const diff = Math.round((d - start) / 86400000);
-  return Math.max(1, diff + 1);
-}
-
-function getPhaseForDay(dayNum) {
-  if (dayNum <= 21) return 0;
-  if (dayNum <= 49) return 1;
-  return 2;
-}
-
-function loadDay(d) {
-  const key = `fit:${dateKey(d)}`;
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-function saveDay(d, state) {
-  const key = `fit:${dateKey(d)}`;
-  try {
-    localStorage.setItem(key, JSON.stringify(state));
-  } catch (e) {
-    console.error('Save failed', e);
-  }
-}
+let state = null;
 
 function getDefaultState() {
   return {
-    weight: null,
-    sleep: null,
-    energy: 5,
-    mood: 5,
-    sciatica: 0,
-    water: 0,
-    tasks: {},
-    notes: ''
+    weight: null, sleep: null, caffeine: null,
+    energy: 5, mood: 5, sciatica: 0,
+    water: 0, tasks: {}, notes: '', symptoms: '',
+    dayType: 'normal',  // normal | class | festive | rest
+    workoutOverride: null,  // override default workout
+    classChoice: null  // which class if dayType=class
   };
 }
 
-let state = loadDay(currentDate) || getDefaultState();
-
-// ===== RENDERING =====
-function formatDate(d) {
-  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+function loadDay(d) {
+  try {
+    const raw = localStorage.getItem(`fit:${dateKey(d)}`);
+    if (!raw) return null;
+    const stored = JSON.parse(raw);
+    // Backwards-compat: merge with defaults so missing v5 fields don't break the UI
+    return { ...getDefaultState(), ...stored };
+  } catch { return null; }
 }
 
+function saveDay(d, s) {
+  try { localStorage.setItem(`fit:${dateKey(d)}`, JSON.stringify(s)); }
+  catch (e) { console.error(e); }
+}
+
+// ============================================
+// MEAL HELPERS
+// ============================================
+function getMealForSlot(slot, date) {
+  const options = MEAL_LIBRARY[slot];
+  const overrideKey = `meal-override:${dateKey(date)}:${slot}`;
+  const override = localStorage.getItem(overrideKey);
+  if (override) {
+    const found = options.find(o => o.id === override);
+    if (found) return found;
+  }
+  return options[date.getDay() % options.length];
+}
+
+function setMealOverride(slot, date, mealId) {
+  localStorage.setItem(`meal-override:${dateKey(date)}:${slot}`, mealId);
+}
+
+function getNutritionPlan(date) {
+  return [
+    { id: 'n1', slot: 'breakfast', title: 'Breakfast', meal: getMealForSlot('breakfast', date) },
+    { id: 'n2', slot: 'midmorning', title: 'Mid-morning', meal: getMealForSlot('midmorning', date) },
+    { id: 'n3', slot: 'lunch', title: 'Lunch', meal: getMealForSlot('lunch', date) },
+    { id: 'n4', slot: 'preworkout', title: 'Pre-workout', meal: getMealForSlot('preworkout', date) },
+    { id: 'n5', slot: 'postworkout', title: 'Post-workout', meal: getMealForSlot('postworkout', date) },
+    { id: 'n6', slot: 'dinner', title: 'Dinner', meal: getMealForSlot('dinner', date) }
+  ];
+}
+
+// ============================================
+// WORKOUT HELPERS
+// ============================================
+function getWorkoutForDate(date) {
+  const s = loadDay(date);
+  if (s && s.workoutOverride) return WORKOUT_SPLITS[s.workoutOverride];
+  if (s && s.dayType === 'class') return WORKOUT_SPLITS.class;
+  if (s && s.dayType === 'rest') return WORKOUT_SPLITS.rest;
+  if (s && s.dayType === 'festive') return WORKOUT_SPLITS.rest;
+  return WORKOUT_SPLITS[getDefaultWorkoutForDate(date)];
+}
+
+function getWorkoutTasks(workout) {
+  if (!workout || !workout.exercises) return [];
+  return workout.exercises.map(exId => {
+    const ex = EXERCISES[exId];
+    return { id: `w_${exId}`, exerciseId: exId, title: ex ? ex.name : exId, meta: ex ? ex.cue : '', svg: ex ? ex.svg : '', video: ex ? ex.video : null };
+  });
+}
+
+// ============================================
+// RENDERING
+// ============================================
 function render() {
   const dayNum = dayNumber(currentDate);
-  const phase = getPhaseForDay(dayNum);
-  const phaseData = PHASES[phase];
+  const phase = getCurrentPhase(currentDate);
 
-  // Header
   document.getElementById('day-title').textContent = `Day ${dayNum}`;
   document.getElementById('day-subtitle').textContent = formatDate(currentDate);
-  document.getElementById('phase-pill').textContent = phaseData.name;
+
+  // Day type buttons
+  document.querySelectorAll('.daytype-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.type === (state.dayType || 'normal'));
+  });
 
   // Stats
   document.getElementById('weight-input').value = state.weight || '';
   document.getElementById('sleep-input').value = state.sleep || '';
+  document.getElementById('caffeine-input').value = state.caffeine || '';
 
   // Sliders
   document.getElementById('energy-slider').value = state.energy;
@@ -358,78 +260,31 @@ function render() {
   document.getElementById('mood-slider').value = state.mood;
   document.getElementById('mood-value').textContent = state.mood;
   document.getElementById('sciatica-slider').value = state.sciatica;
-  const sciaticaEl = document.getElementById('sciatica-value');
-  sciaticaEl.textContent = state.sciatica;
-  sciaticaEl.className = 'slider-value sciatica-value' +
-    (state.sciatica >= 7 ? ' high' : state.sciatica >= 4 ? ' medium' : '');
-
-  // Water
-  renderWater();
+  const sci = document.getElementById('sciatica-value');
+  sci.textContent = state.sciatica;
+  sci.className = 'slider-value sciatica-value' + (state.sciatica >= 7 ? ' high' : state.sciatica >= 4 ? ' medium' : '');
 
   // Notes
-  document.getElementById('notes-input').value = state.notes;
+  document.getElementById('notes-input').value = state.notes || '';
+  document.getElementById('symptom-input').value = state.symptoms || '';
 
-  // Tasks
-  renderTaskList('nutrition-list', NUTRITION_PLAN, 'nutrition-meta');
-  renderTaskList('workout-list', phaseData.workout, 'workout-meta');
-  renderTaskList('habits-list', HABITS_PLAN, 'habits-meta');
-
-  // Progress
+  renderWater();
+  renderWorkout();
+  renderNutrition();
+  renderHabits();
   updateProgress();
-
-  // Streak
   updateStreak();
-}
+  renderDashboard();
 
-function renderTaskList(containerId, items, metaId) {
-  const container = document.getElementById(containerId);
-  container.innerHTML = '';
-  let done = 0;
-  items.forEach(item => {
-    const isDone = !!state.tasks[item.id];
-    if (isDone) done++;
-    const row = document.createElement('div');
-    row.className = 'task-item' + (isDone ? ' done' : '');
-    row.innerHTML = `
-      <div class="task-checkbox"></div>
-      <div class="task-content">
-        <div class="task-title"></div>
-        <div class="task-meta"></div>
-      </div>
-      <button class="task-video-btn" aria-label="Watch video"></button>
-    `;
-    row.querySelector('.task-title').textContent = item.title;
-    row.querySelector('.task-meta').textContent = item.meta;
-
-    const videoBtn = row.querySelector('.task-video-btn');
-    if (item.video) {
-      videoBtn.innerHTML = '▶';
-      videoBtn.title = 'Watch demo on YouTube';
-      videoBtn.addEventListener('click', (e) => {
-        e.stopPropagation(); // don't toggle the checkbox
-        const url = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(item.video);
-        window.open(url, '_blank', 'noopener');
-      });
-    } else {
-      videoBtn.style.display = 'none';
-    }
-
-    row.addEventListener('click', () => {
-      state.tasks[item.id] = !state.tasks[item.id];
-      saveDay(currentDate, state);
-      render();
-    });
-    container.appendChild(row);
-  });
-  if (metaId) {
-    document.getElementById(metaId).textContent = `${done}/${items.length}`;
-  }
+  // Why
+  const why = localStorage.getItem('fit:why');
+  document.getElementById('why-text').textContent = why || 'Tap to set your reason';
 }
 
 function renderWater() {
   const grid = document.getElementById('water-grid');
   grid.innerHTML = '';
-  for (let i = 1; i <= 14; i++) {
+  for (let i = 1; i <= WATER_CUPS; i++) {
     const cup = document.createElement('div');
     cup.className = 'water-cup' + (i <= state.water ? ' filled' : '');
     cup.textContent = i;
@@ -441,20 +296,263 @@ function renderWater() {
     grid.appendChild(cup);
   }
   const liters = (state.water * 0.25).toFixed(2).replace(/\.?0+$/, '');
-  document.getElementById('water-meta').textContent = `${liters} / 3.5 L`;
+  document.getElementById('water-meta').textContent = `${liters} / ${TARGET_WATER_L} L`;
+}
+
+function renderWorkout() {
+  const workout = getWorkoutForDate(currentDate);
+  document.getElementById('workout-type-display').textContent = `${workout.icon} ${workout.name}`;
+  document.getElementById('workout-focus').textContent = workout.focus || '';
+
+  const list = document.getElementById('workout-list');
+  list.innerHTML = '';
+
+  // Class day - show class picker if no choice yet
+  const classOptionsDiv = document.getElementById('class-options');
+  if (workout.id === 'class') {
+    classOptionsDiv.classList.remove('hidden');
+    const optList = document.getElementById('class-options-list');
+    optList.innerHTML = '';
+    workout.classOptions.forEach(className => {
+      const btn = document.createElement('button');
+      btn.className = 'class-option-btn' + (state.classChoice === className ? ' selected' : '');
+      btn.textContent = className;
+      btn.addEventListener('click', () => {
+        state.classChoice = className;
+        if (!state.tasks['class_attended']) state.tasks['class_attended'] = false;
+        saveDay(currentDate, state);
+        render();
+      });
+      optList.appendChild(btn);
+    });
+    if (state.classChoice) {
+      const row = createTaskRow({ id: 'class_attended', title: `Class: ${state.classChoice}`, meta: '45 min instructor-led', svg: '', video: state.classChoice.toLowerCase() + ' fitness class' });
+      list.appendChild(row);
+    }
+    document.getElementById('workout-meta').textContent = state.classChoice ? (state.tasks['class_attended'] ? '✓ Done' : 'Pending') : 'Pick class';
+    return;
+  } else {
+    classOptionsDiv.classList.add('hidden');
+  }
+
+  const tasks = getWorkoutTasks(workout);
+  let done = 0;
+  tasks.forEach(item => {
+    if (state.tasks[item.id]) done++;
+    const row = createTaskRow(item);
+    list.appendChild(row);
+  });
+  document.getElementById('workout-meta').textContent = tasks.length ? `${done}/${tasks.length}` : '';
+}
+
+function createTaskRow(item) {
+  const isDone = !!state.tasks[item.id];
+  const row = document.createElement('div');
+  row.className = 'task-item' + (isDone ? ' done' : '');
+
+  const checkbox = document.createElement('div');
+  checkbox.className = 'task-checkbox';
+  row.appendChild(checkbox);
+
+  const content = document.createElement('div');
+  content.className = 'task-content';
+  const title = document.createElement('div');
+  title.className = 'task-title';
+  title.textContent = item.title;
+  content.appendChild(title);
+  if (item.meta) {
+    const meta = document.createElement('div');
+    meta.className = 'task-meta';
+    meta.textContent = item.meta;
+    content.appendChild(meta);
+  }
+  row.appendChild(content);
+
+  // SVG diagram preview if available
+  if (item.svg) {
+    const svgWrap = document.createElement('button');
+    svgWrap.className = 'task-svg-btn';
+    svgWrap.setAttribute('aria-label', 'View diagram');
+    svgWrap.innerHTML = item.svg;
+    svgWrap.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openExerciseModal(item);
+    });
+    row.appendChild(svgWrap);
+  }
+
+  if (item.video) {
+    const videoBtn = document.createElement('button');
+    videoBtn.className = 'task-video-btn';
+    videoBtn.innerHTML = '▶';
+    videoBtn.setAttribute('aria-label', 'Watch video');
+    videoBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      window.open('https://www.youtube.com/results?search_query=' + encodeURIComponent(item.video), '_blank', 'noopener');
+    });
+    row.appendChild(videoBtn);
+  }
+
+  row.addEventListener('click', () => {
+    state.tasks[item.id] = !state.tasks[item.id];
+    saveDay(currentDate, state);
+    render();
+  });
+  return row;
+}
+
+function openExerciseModal(item) {
+  document.getElementById('exercise-modal-title').textContent = item.title;
+  const body = document.getElementById('exercise-modal-body');
+  body.innerHTML = `
+    <div class="exercise-modal-svg">${item.svg}</div>
+    <p class="exercise-modal-cue">${item.meta}</p>
+    ${item.video ? `<button class="btn btn-primary" onclick="window.open('https://www.youtube.com/results?search_query=${encodeURIComponent(item.video)}','_blank','noopener')">▶ Watch on YouTube</button>` : ''}
+  `;
+  document.getElementById('exercise-modal').classList.remove('hidden');
+}
+
+function closeExerciseModal() {
+  document.getElementById('exercise-modal').classList.add('hidden');
+}
+
+function renderNutrition() {
+  const items = getNutritionPlan(currentDate);
+  const list = document.getElementById('nutrition-list');
+  list.innerHTML = '';
+  let done = 0, totalKcal = 0, totalP = 0, totalC = 0, totalF = 0;
+
+  items.forEach(item => {
+    const isDone = !!state.tasks[item.id];
+    if (isDone) done++;
+    totalKcal += item.meal.kcal;
+    totalP += item.meal.protein || 0;
+    totalC += item.meal.carbs || 0;
+    totalF += item.meal.fat || 0;
+
+    const row = document.createElement('div');
+    row.className = 'task-item meal-item' + (isDone ? ' done' : '');
+
+    const checkbox = document.createElement('div');
+    checkbox.className = 'task-checkbox';
+    row.appendChild(checkbox);
+
+    const content = document.createElement('div');
+    content.className = 'task-content';
+
+    const eyebrow = document.createElement('div');
+    eyebrow.className = 'task-title meal-eyebrow';
+    eyebrow.textContent = `${item.title} · ${item.meal.cuisine} · ${item.meal.kcal} kcal`;
+    content.appendChild(eyebrow);
+
+    const name = document.createElement('div');
+    name.className = 'meal-name';
+    name.textContent = item.meal.name;
+    content.appendChild(name);
+
+    const detail = document.createElement('div');
+    detail.className = 'task-meta';
+    detail.textContent = item.meal.detail;
+    content.appendChild(detail);
+
+    const macros = document.createElement('div');
+    macros.className = 'meal-macros';
+    macros.innerHTML = `<span>P ${item.meal.protein}g</span><span>C ${item.meal.carbs}g</span><span>F ${item.meal.fat}g</span>`;
+    content.appendChild(macros);
+
+    row.appendChild(content);
+
+    const swapBtn = document.createElement('button');
+    swapBtn.className = 'task-video-btn meal-swap-btn';
+    swapBtn.innerHTML = '⇆';
+    swapBtn.setAttribute('aria-label', 'Swap meal');
+    swapBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openMealSwap(item.slot, item.meal.id);
+    });
+    row.appendChild(swapBtn);
+
+    row.addEventListener('click', () => {
+      state.tasks[item.id] = !state.tasks[item.id];
+      saveDay(currentDate, state);
+      render();
+    });
+    list.appendChild(row);
+  });
+
+  document.getElementById('nutrition-meta').textContent = `${done}/${items.length}`;
+  document.getElementById('macros-footer').innerHTML = `<strong>${totalKcal}</strong> kcal · <strong>${totalP}g</strong> protein · <strong>${totalC}g</strong> carbs · <strong>${totalF}g</strong> fat · Target ${TARGET_CALORIES}/${TARGET_PROTEIN}g`;
+}
+
+function openMealSwap(slot, currentMealId) {
+  const options = MEAL_LIBRARY[slot];
+  const modal = document.getElementById('meal-swap-modal');
+  document.getElementById('meal-swap-title').textContent = `Swap ${slot.charAt(0).toUpperCase() + slot.slice(1)}`;
+  const list = document.getElementById('meal-swap-list');
+  list.innerHTML = '';
+  options.forEach(opt => {
+    const row = document.createElement('div');
+    row.className = 'meal-swap-option' + (opt.id === currentMealId ? ' selected' : '');
+    row.innerHTML = `
+      <div class="meal-swap-header">
+        <span class="meal-swap-name">${opt.cuisine} ${opt.name}</span>
+        <span class="meal-swap-kcal">${opt.kcal} kcal</span>
+      </div>
+      <div class="meal-swap-detail">${opt.detail}</div>
+      <div class="meal-macros"><span>P ${opt.protein}g</span><span>C ${opt.carbs}g</span><span>F ${opt.fat}g</span></div>
+    `;
+    row.addEventListener('click', () => {
+      setMealOverride(slot, currentDate, opt.id);
+      closeMealSwap();
+      render();
+      showToast('Meal swapped');
+    });
+    list.appendChild(row);
+  });
+  modal.classList.remove('hidden');
+}
+
+function closeMealSwap() {
+  document.getElementById('meal-swap-modal').classList.add('hidden');
+}
+
+function renderHabits() {
+  const list = document.getElementById('habits-list');
+  list.innerHTML = '';
+  let done = 0;
+  HABITS_PLAN.forEach(item => {
+    if (state.tasks[item.id]) done++;
+    const row = createTaskRow(item);
+    list.appendChild(row);
+  });
+  document.getElementById('habits-meta').textContent = `${done}/${HABITS_PLAN.length}`;
+}
+
+// ============================================
+// PROGRESS & STREAK
+// ============================================
+function getAllTasksForDate(d, s) {
+  const workout = getWorkoutForDate(d);
+  const workoutTasks = workout.id === 'class' ? (s.classChoice ? [{id: 'class_attended'}] : []) : getWorkoutTasks(workout);
+  return [...getNutritionPlan(d), ...workoutTasks, ...HABITS_PLAN];
+}
+
+function dayAdherencePct(d, s) {
+  if (!s) return 0;
+  if (s.dayType === 'festive') {
+    const water = s.water || 0;
+    const water_pct = Math.min(100, (water / WATER_CUPS) * 100);
+    const weight_logged = s.weight ? 100 : 0;
+    return Math.round((water_pct + weight_logged) / 2);
+  }
+  const all = getAllTasksForDate(d, s);
+  const total = all.length + WATER_CUPS;
+  const done = all.filter(t => s.tasks && s.tasks[t.id]).length + (s.water || 0);
+  return Math.round((done / total) * 100);
 }
 
 function updateProgress() {
-  const dayNum = dayNumber(currentDate);
-  const phase = getPhaseForDay(dayNum);
-  const allTasks = [
-    ...NUTRITION_PLAN,
-    ...PHASES[phase].workout,
-    ...HABITS_PLAN
-  ];
-  const totalAll = allTasks.length + 14; // +14 for water cups
-  const doneAll = allTasks.filter(t => state.tasks[t.id]).length + state.water;
-  const pct = Math.round((doneAll / totalAll) * 100);
+  const pct = dayAdherencePct(currentDate, state);
   document.getElementById('progress-fill').style.width = pct + '%';
   document.getElementById('progress-text').textContent = pct + '%';
 }
@@ -467,71 +565,110 @@ function updateStreak() {
     const d = new Date(today.getTime() - i * 86400000);
     const s = loadDay(d);
     if (!s) break;
+    // streak preserves on festive, class, or any day with activity
+    if (s.dayType === 'festive' || s.dayType === 'class') {
+      if ((s.water || 0) >= 4) { streak++; continue; }
+      break;
+    }
     const taskCount = Object.values(s.tasks || {}).filter(Boolean).length;
-    if (taskCount < 5 && s.water < 4) break;
+    if (taskCount < 5 && (s.water || 0) < 4) break;
     streak++;
   }
-  document.getElementById('streak-display').textContent = streak;
+  const el = document.getElementById('dash-streak');
+  if (el) el.textContent = streak;
 }
 
-// ===== HISTORY TAB =====
-function renderHistory() {
-  const list = document.getElementById('history-list');
-  list.innerHTML = '';
+// ============================================
+// DASHBOARD
+// ============================================
+function renderDashboard() {
+  // Phase card
+  const phase = getCurrentPhase(currentDate);
+  const dayNum = dayNumber(currentDate);
+  document.getElementById('dash-phase-name').textContent = `${phase.name} ${phase.icon}`;
+  document.getElementById('dash-phase-day').textContent = `Day ${dayNum}/87`;
+  const phaseStart = phase.dayStart;
+  const phaseEnd = phase.dayEnd;
+  const phasePct = Math.min(100, Math.max(0, ((dayNum - phaseStart) / (phaseEnd - phaseStart + 1)) * 100));
+  document.getElementById('phase-progress-fill').style.width = phasePct + '%';
+  const daysToTarget = daysUntil(TARGET_DATE);
+  document.getElementById('dash-phase-meta').textContent = daysToTarget > 0 ? `${daysToTarget} days to Aug 20` : `Past target date`;
+
+  // Weight
+  const latestWeight = getLatestWeight();
+  document.getElementById('dash-weight').textContent = latestWeight ? `${latestWeight.toFixed(1)} kg` : '—';
+  if (latestWeight) {
+    const delta = latestWeight - START_WEIGHT;
+    const trend = delta < 0 ? `${delta.toFixed(1)} kg` : `+${delta.toFixed(1)} kg`;
+    const trendEl = document.getElementById('dash-weight-trend');
+    trendEl.textContent = trend;
+    trendEl.className = 'dash-trend ' + (delta < 0 ? 'trend-good' : delta > 0 ? 'trend-bad' : '');
+  }
+  document.getElementById('dash-togo').textContent = latestWeight ? `${(latestWeight - TARGET_WEIGHT).toFixed(1)} kg` : '—';
+
+  // 7-day adherence avg
+  document.getElementById('dash-adherence').textContent = `${calculate7DayAdherence()}%`;
+
+  // Charts
+  drawWeightChart();
+  drawAdherenceBars();
+  drawSleepChart();
+
+  // Checkpoint
+  renderCheckpoint();
+}
+
+function getLatestWeight() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  let anyData = false;
-  for (let i = 0; i < 14; i++) {
+  for (let i = 0; i < 30; i++) {
     const d = new Date(today.getTime() - i * 86400000);
     const s = loadDay(d);
-    if (!s) continue;
-    anyData = true;
-    const dayNum = dayNumber(d);
-    const phase = getPhaseForDay(dayNum);
-    const allTasks = [...NUTRITION_PLAN, ...PHASES[phase].workout, ...HABITS_PLAN];
-    const totalAll = allTasks.length + 14;
-    const doneAll = allTasks.filter(t => s.tasks && s.tasks[t.id]).length + (s.water || 0);
-    const pct = Math.round((doneAll / totalAll) * 100);
-    const row = document.createElement('div');
-    row.className = 'history-day';
-    row.innerHTML = `
-      <div class="history-date">${formatDate(d)}</div>
-      <div class="history-bar"><div class="history-bar-fill" style="width: ${pct}%"></div></div>
-      <div class="history-pct">${pct}%</div>
-    `;
-    row.addEventListener('click', () => {
-      currentDate = d;
-      state = loadDay(currentDate) || getDefaultState();
-      switchTab('today');
-      render();
-    });
-    list.appendChild(row);
+    if (s && s.weight) return s.weight;
   }
-  if (!anyData) {
-    list.innerHTML = '<div class="empty-state">No history yet. Complete a day to see it here.</div>';
-  }
-  renderWeightChart();
+  return null;
 }
 
-function renderWeightChart() {
+function calculate7DayAdherence() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let sum = 0, count = 0;
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today.getTime() - i * 86400000);
+    const s = loadDay(d);
+    if (s) {
+      sum += dayAdherencePct(d, s);
+      count++;
+    }
+  }
+  return count ? Math.round(sum / count) : 0;
+}
+
+function drawWeightChart() {
   const canvas = document.getElementById('weight-chart');
+  if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const w = canvas.width = canvas.offsetWidth * 2;
-  const h = canvas.height = 320;
-  ctx.scale(1, 1);
+  const h = canvas.height = 360;
   ctx.clearRect(0, 0, w, h);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const points = [];
-  for (let i = 89; i >= 0; i--) {
+  for (let i = 27; i >= 0; i--) {
     const d = new Date(today.getTime() - i * 86400000);
     const s = loadDay(d);
     if (s && s.weight) points.push({ date: d, weight: s.weight });
   }
 
+  const styles = getComputedStyle(document.documentElement);
+  const accent = styles.getPropertyValue('--accent').trim() || '#3b82f6';
+  const success = styles.getPropertyValue('--success').trim() || '#10b981';
+  const grid = styles.getPropertyValue('--border').trim() || '#2a2a3a';
+  const tert = styles.getPropertyValue('--text-tertiary').trim() || '#6b7280';
+
   if (points.length < 2) {
-    ctx.fillStyle = '#6b7280';
+    ctx.fillStyle = tert;
     ctx.font = '24px -apple-system, system-ui';
     ctx.textAlign = 'center';
     ctx.fillText('Log weight on 2+ days to see chart', w / 2, h / 2);
@@ -542,12 +679,11 @@ function renderWeightChart() {
   const weights = points.map(p => p.weight);
   const minW = Math.min(...weights, TARGET_WEIGHT) - 0.5;
   const maxW = Math.max(...weights, START_WEIGHT) + 0.5;
-  const padding = 60;
+  const padding = 70;
   const chartW = w - padding * 2;
   const chartH = h - padding * 2;
 
-  // Grid
-  ctx.strokeStyle = '#2a2a3a';
+  ctx.strokeStyle = grid;
   ctx.lineWidth = 1;
   for (let i = 0; i <= 4; i++) {
     const y = padding + (chartH / 4) * i;
@@ -556,7 +692,7 @@ function renderWeightChart() {
     ctx.lineTo(w - padding, y);
     ctx.stroke();
     const val = (maxW - ((maxW - minW) / 4) * i).toFixed(1);
-    ctx.fillStyle = '#6b7280';
+    ctx.fillStyle = tert;
     ctx.font = '20px -apple-system, system-ui';
     ctx.textAlign = 'right';
     ctx.fillText(val, padding - 10, y + 7);
@@ -564,28 +700,27 @@ function renderWeightChart() {
 
   // Target line
   const targetY = padding + chartH - ((TARGET_WEIGHT - minW) / (maxW - minW)) * chartH;
-  ctx.strokeStyle = '#10b981';
-  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = success;
+  ctx.setLineDash([5, 5]);
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(padding, targetY);
   ctx.lineTo(w - padding, targetY);
   ctx.stroke();
   ctx.setLineDash([]);
-  ctx.fillStyle = '#10b981';
+  ctx.fillStyle = success;
   ctx.font = '18px -apple-system, system-ui';
   ctx.textAlign = 'left';
-  ctx.fillText('Target', padding + 4, targetY - 6);
+  ctx.fillText('Target 70kg', padding + 4, targetY - 6);
 
-  // Plot points
-  ctx.strokeStyle = '#3b82f6';
+  // Plot line
+  ctx.strokeStyle = accent;
   ctx.lineWidth = 3;
   ctx.beginPath();
   points.forEach((p, i) => {
     const x = padding + (i / (points.length - 1)) * chartW;
     const y = padding + chartH - ((p.weight - minW) / (maxW - minW)) * chartH;
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   });
   ctx.stroke();
 
@@ -593,7 +728,7 @@ function renderWeightChart() {
   points.forEach((p, i) => {
     const x = padding + (i / (points.length - 1)) * chartW;
     const y = padding + chartH - ((p.weight - minW) / (maxW - minW)) * chartH;
-    ctx.fillStyle = '#3b82f6';
+    ctx.fillStyle = accent;
     ctx.beginPath();
     ctx.arc(x, y, 5, 0, Math.PI * 2);
     ctx.fill();
@@ -604,87 +739,435 @@ function renderWeightChart() {
   const diff = latest - first;
   const sign = diff > 0 ? '+' : '';
   document.getElementById('weight-summary').textContent =
-    `Latest: ${latest.toFixed(1)} kg · Change: ${sign}${diff.toFixed(1)} kg · To go: ${(latest - TARGET_WEIGHT).toFixed(1)} kg`;
+    `Latest ${latest.toFixed(1)} kg · Δ ${sign}${diff.toFixed(1)} kg in ${points.length} days · ${(latest - TARGET_WEIGHT).toFixed(1)} kg to go`;
 }
 
-// ===== PLAN TAB =====
-function renderPlan() {
-  // Phase info
+function drawAdherenceBars() {
+  const container = document.getElementById('adherence-bars');
+  if (!container) return;
+  container.innerHTML = '';
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const dayNum = dayNumber(today);
-  const phase = getPhaseForDay(dayNum);
-  const phaseData = PHASES[phase];
-  document.getElementById('phase-info').innerHTML = `
-    <div class="phase-current">${phaseData.name}</div>
-    <div style="color: var(--text-secondary); font-size: 13px; margin-bottom: 8px;">Weeks ${phaseData.weeks} · Day ${dayNum} of 87</div>
-    <div>${phaseData.description}</div>
-  `;
+  let any = false;
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(today.getTime() - i * 86400000);
+    const s = loadDay(d);
+    const row = document.createElement('div');
+    row.className = 'adherence-row';
+    if (!s) {
+      row.innerHTML = `<div class="adh-date">${shortDate(d)}</div><div class="adh-bar"><div class="adh-fill empty"></div></div><div class="adh-pct">—</div>`;
+    } else {
+      any = true;
+      const pct = dayAdherencePct(d, s);
+      const label = s.dayType === 'festive' ? '🎉' : s.dayType === 'class' ? '🎵' : s.dayType === 'rest' ? '😌' : `${pct}%`;
+      row.innerHTML = `<div class="adh-date">${shortDate(d)}</div><div class="adh-bar"><div class="adh-fill" style="width:${pct}%"></div></div><div class="adh-pct">${label}</div>`;
+    }
+    container.appendChild(row);
+  }
+  if (!any) container.innerHTML = '<div class="empty-state">Log a day to see adherence</div>';
+}
 
+function drawSleepChart() {
+  const canvas = document.getElementById('sleep-chart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width = canvas.offsetWidth * 2;
+  const h = canvas.height = 280;
+  ctx.clearRect(0, 0, w, h);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const points = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(today.getTime() - i * 86400000);
+    const s = loadDay(d);
+    points.push({ date: d, sleep: s ? s.sleep : null, sciatica: s ? s.sciatica : null });
+  }
+
+  const styles = getComputedStyle(document.documentElement);
+  const accent = styles.getPropertyValue('--accent').trim() || '#3b82f6';
+  const danger = styles.getPropertyValue('--danger').trim() || '#ef4444';
+  const grid = styles.getPropertyValue('--border').trim() || '#2a2a3a';
+  const tert = styles.getPropertyValue('--text-tertiary').trim() || '#6b7280';
+
+  const padding = 50;
+  const chartW = w - padding * 2;
+  const chartH = h - padding * 2;
+  const maxSleep = 12;
+
+  // Grid
+  ctx.strokeStyle = grid;
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = padding + (chartH / 4) * i;
+    ctx.beginPath();
+    ctx.moveTo(padding, y);
+    ctx.lineTo(w - padding, y);
+    ctx.stroke();
+  }
+  ctx.fillStyle = tert;
+  ctx.font = '18px -apple-system, system-ui';
+  ctx.textAlign = 'right';
+  ctx.fillText('12h', padding - 8, padding + 6);
+  ctx.fillText('6h', padding - 8, padding + chartH / 2 + 6);
+  ctx.fillText('0h', padding - 8, padding + chartH + 6);
+
+  // Sleep bars
+  const barW = chartW / points.length * 0.7;
+  points.forEach((p, i) => {
+    const x = padding + (i + 0.5) * (chartW / points.length) - barW / 2;
+    if (p.sleep) {
+      const barH = (p.sleep / maxSleep) * chartH;
+      ctx.fillStyle = accent;
+      ctx.fillRect(x, padding + chartH - barH, barW, barH);
+    }
+  });
+
+  // Sciatica overlay line
+  ctx.strokeStyle = danger;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  let started = false;
+  points.forEach((p, i) => {
+    if (p.sciatica === null || p.sciatica === undefined) return;
+    const x = padding + (i + 0.5) * (chartW / points.length);
+    const y = padding + chartH - (p.sciatica / 10) * chartH;
+    if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  points.forEach((p, i) => {
+    if (p.sciatica === null || p.sciatica === undefined) return;
+    const x = padding + (i + 0.5) * (chartW / points.length);
+    const y = padding + chartH - (p.sciatica / 10) * chartH;
+    ctx.fillStyle = danger;
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Legend
+  ctx.fillStyle = accent;
+  ctx.fillRect(padding, 12, 14, 14);
+  ctx.fillStyle = tert;
+  ctx.font = '20px -apple-system, system-ui';
+  ctx.textAlign = 'left';
+  ctx.fillText('Sleep (hrs)', padding + 22, 25);
+  ctx.fillStyle = danger;
+  ctx.fillRect(padding + 180, 12, 14, 14);
+  ctx.fillStyle = tert;
+  ctx.fillText('Sciatica (0-10)', padding + 202, 25);
+}
+
+function renderCheckpoint() {
+  const card = document.getElementById('checkpoint-card');
+  if (!card) return;
+  const today = new Date();
+  const upcoming = CHECKPOINTS.find(c => new Date(c.date) >= today) || CHECKPOINTS[CHECKPOINTS.length - 1];
+  document.getElementById('checkpoint-title').textContent = upcoming.title;
+  const diff = daysUntil(upcoming.date);
+  document.getElementById('checkpoint-countdown').textContent = diff > 0 ? `${diff} days away · ${upcoming.date}` : diff === 0 ? 'TODAY' : `${Math.abs(diff)} days ago`;
+  const tasks = document.getElementById('checkpoint-tasks');
+  tasks.innerHTML = upcoming.tasks.map(t => `<li>${t}</li>`).join('');
+}
+
+// ============================================
+// MEALS TAB
+// ============================================
+function renderMealsTab() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const list = document.getElementById('week-meals-list');
+  list.innerHTML = '';
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today.getTime() + i * 86400000);
+    const plan = getNutritionPlan(d);
+    const totalKcal = plan.reduce((sum, p) => sum + p.meal.kcal, 0);
+    const totalP = plan.reduce((sum, p) => sum + (p.meal.protein || 0), 0);
+    const day = document.createElement('div');
+    day.className = 'week-day-card';
+    day.innerHTML = `
+      <div class="week-day-header">
+        <div>
+          <div class="week-day-name">${formatDate(d)}</div>
+          <div class="week-day-summary">${totalKcal} kcal · ${totalP}g protein</div>
+        </div>
+        <button class="link-btn">View →</button>
+      </div>
+    `;
+    day.addEventListener('click', () => openHelperView(d));
+    list.appendChild(day);
+  }
+}
+
+// ============================================
+// HELPER VIEW
+// ============================================
+function openHelperView(date) {
+  const d = date || currentDate;
+  const plan = getNutritionPlan(d);
+  document.getElementById('helper-modal-title').textContent = `Helper handover · ${formatDate(d)}`;
+  const content = document.getElementById('helper-content');
+  let html = `<div class="helper-intro"><p>Meals to prepare for ${formatDate(d)}. Pack lunch in container for office.</p></div>`;
+  plan.forEach(item => {
+    if (!item.meal.helper || item.meal.helper === 'No prep.') return; // skip no-prep items
+    html += `
+      <div class="helper-meal">
+        <h4>${item.title}: ${item.meal.name} ${item.meal.cuisine}</h4>
+        <p class="helper-ingredients"><strong>What's in it:</strong> ${item.meal.detail}</p>
+        <p class="helper-instructions"><strong>How to cook:</strong> ${item.meal.helper}</p>
+        ${item.meal.video ? `<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(item.meal.name + ' recipe')}" target="_blank" class="link-btn">🎥 Recipe video</a>` : ''}
+      </div>
+    `;
+  });
+  // Also include no-prep items as a quick list
+  const noprep = plan.filter(p => p.meal.helper === 'No prep.');
+  if (noprep.length) {
+    html += `<div class="helper-meal"><h4>No-prep items (assemble fresh):</h4><ul>`;
+    noprep.forEach(p => html += `<li><strong>${p.title}:</strong> ${p.meal.detail}</li>`);
+    html += `</ul></div>`;
+  }
+  content.innerHTML = html;
+  document.getElementById('helper-modal').classList.remove('hidden');
+}
+
+function closeHelper() {
+  document.getElementById('helper-modal').classList.add('hidden');
+}
+
+function printHelper() {
+  const content = document.getElementById('helper-content').innerHTML;
+  const title = document.getElementById('helper-modal-title').textContent;
+  const w = window.open('', '_blank');
+  w.document.write(`<!DOCTYPE html><html><head><title>${title}</title><style>
+    body{font-family:-apple-system,system-ui,sans-serif;max-width:600px;margin:20px auto;padding:20px;color:#000}
+    h1{font-size:22px;border-bottom:2px solid #000;padding-bottom:8px}
+    h4{font-size:16px;margin-top:18px;margin-bottom:6px}
+    p{margin:6px 0;font-size:14px;line-height:1.5}
+    .helper-meal{border-bottom:1px solid #ddd;padding-bottom:12px;margin-bottom:12px}
+    .link-btn{display:none}
+    ul{padding-left:20px}
+  </style></head><body><h1>${title}</h1>${content}</body></html>`);
+  w.document.close();
+  setTimeout(() => w.print(), 500);
+}
+
+function shareHelper() {
+  const content = document.getElementById('helper-content').innerText;
+  const title = document.getElementById('helper-modal-title').textContent;
+  if (navigator.share) {
+    navigator.share({ title: title, text: content }).catch(() => {});
+  } else {
+    copyToClipboard(`${title}\n\n${content}`);
+  }
+}
+
+// ============================================
+// GROCERY LIST
+// ============================================
+function openGrocery() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  // Aggregate ingredients across 7 days
+  const ingredients = {};
+  const addIng = (name, qty) => {
+    ingredients[name] = (ingredients[name] || 0) + qty;
+  };
+  // Simple heuristic — count occurrence of meals
+  const mealCounts = {};
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today.getTime() + i * 86400000);
+    const plan = getNutritionPlan(d);
+    plan.forEach(p => {
+      mealCounts[p.meal.id] = (mealCounts[p.meal.id] || 0) + 1;
+    });
+  }
+
+  // Static grocery list (curated by category) - more reliable than NLP on meal text
+  const groceryList = {
+    'Proteins': [
+      'Chicken breast (boneless) — 1.2 kg',
+      'Fish fillets (salmon/hammour) — 600g',
+      'White fish for soup — 200g',
+      'Lean beef strips — 200g',
+      'Eggs — 1 dozen',
+      'Paneer — 200g',
+      'Whey protein isolate (if not on hand)',
+      'Cottage cheese — 250g',
+      'Tuna in water — 2 small cans'
+    ],
+    'Grains & Carbs': [
+      'Brown rice — 500g (lasts 2 weeks)',
+      'Quinoa — 250g',
+      'Rolled oats — 500g',
+      'Multigrain rotis — 1 pack',
+      'Sweet potato — 2 medium',
+      'Masoor daal — 500g',
+      'Chickpeas (dried or canned) — 500g + 1 can'
+    ],
+    'Vegetables': [
+      'Cucumbers — 6-8',
+      'Tomatoes — 8-10',
+      'Onions (mix) — 1 kg',
+      'Bell peppers (red, green, yellow) — 5-6',
+      'Zucchini — 3',
+      'Broccoli — 2 heads',
+      'Bok choy or Asian greens — 1 bunch',
+      'Carrots — 5-6',
+      'Spinach — 2 bunches',
+      'Cauliflower — 1 head (for cauli rice)',
+      'Mixed salad leaves — 1 large bag',
+      'Garlic — 1 head',
+      'Ginger — 100g',
+      'Lemons — 6-8',
+      'Green chilies — small pack',
+      'Coriander, mint — bunches',
+      'Eggplant — 2 medium'
+    ],
+    'Fats & Pantry': [
+      'Extra virgin olive oil — 500ml',
+      'Avocados — 4 ripe',
+      'Walnuts (raw) — 250g',
+      'Almonds (raw) — 250g',
+      'Tahini — small jar',
+      'Soy sauce (low sodium)',
+      'Cumin, turmeric, coriander, garam masala',
+      'Tandoori marinade paste'
+    ],
+    'Dairy': [
+      'Greek yogurt — 1 kg tub',
+      'Labneh — small tub',
+      'Hummus — 250g',
+      'Feta (optional) — 100g'
+    ],
+    'Fruits': [
+      'Bananas — 7',
+      'Apples — 6',
+      'Pears — 3-4',
+      'Berries — 1 box',
+      'Medjool dates — small box'
+    ],
+    'Drinks/Misc': [
+      'Coffee beans/ground — 250g',
+      'Green tea — 1 box',
+      'Chamomile or peppermint tea (caffeine taper)',
+      'Olives — small jar',
+      'Rice cakes (whole grain) — 1 pack'
+    ]
+  };
+
+  let html = `<div class="grocery-intro"><p>One week's groceries (Tue–Mon). Big shop Sat/Sun, top-up Wed.</p></div>`;
+  for (const cat in groceryList) {
+    html += `<div class="grocery-category"><h4>${cat}</h4><ul>`;
+    groceryList[cat].forEach(item => html += `<li>${item}</li>`);
+    html += `</ul></div>`;
+  }
+  document.getElementById('grocery-content').innerHTML = html;
+  document.getElementById('grocery-modal').classList.remove('hidden');
+}
+
+function closeGrocery() {
+  document.getElementById('grocery-modal').classList.add('hidden');
+}
+
+function copyGrocery() {
+  const text = document.getElementById('grocery-content').innerText;
+  copyToClipboard(text);
+  showToast('Grocery list copied');
+}
+
+// ============================================
+// PLAN TAB
+// ============================================
+function renderPlanTab() {
   // Goal progress
   const start = new Date(START_DATE);
   const target = new Date(TARGET_DATE);
   const total = Math.round((target - start) / 86400000);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const elapsed = Math.round((today - start) / 86400000);
   const remaining = total - elapsed;
-  document.getElementById('goal-progress').innerHTML =
-    `<strong>${remaining} days remaining</strong> to target date`;
+  document.getElementById('goal-progress').innerHTML = `<strong>${remaining} days remaining</strong> · Day ${elapsed + 1} of ${total + 1}`;
 
-  // YouTube terms
-  const container = document.getElementById('youtube-terms');
-  container.innerHTML = '';
-  YOUTUBE_SEARCHES.forEach(term => {
-    const a = document.createElement('a');
-    a.href = 'https://www.youtube.com/results?search_query=' + encodeURIComponent(term);
-    a.target = '_blank';
-    a.rel = 'noopener';
-    a.className = 'youtube-term';
-    a.textContent = term;
-    container.appendChild(a);
+  // Weekly schedule
+  const sched = document.getElementById('weekly-schedule-list');
+  sched.innerHTML = '';
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  DEFAULT_WEEKLY_SCHEDULE.forEach((wkId, idx) => {
+    const wk = WORKOUT_SPLITS[wkId];
+    const row = document.createElement('div');
+    row.className = 'sched-row';
+    row.innerHTML = `<div class="sched-day">${dayNames[idx]}</div><div class="sched-workout">${wk.icon} ${wk.name}</div><div class="sched-focus">${wk.focus || ''}</div>`;
+    sched.appendChild(row);
+  });
+
+  // Checkpoints
+  const cp = document.getElementById('all-checkpoints');
+  cp.innerHTML = '';
+  CHECKPOINTS.forEach(c => {
+    const diff = daysUntil(c.date);
+    const status = diff > 0 ? `${diff} days away` : diff === 0 ? 'TODAY' : `${Math.abs(diff)} days ago`;
+    const item = document.createElement('div');
+    item.className = 'cp-item';
+    item.innerHTML = `<div class="cp-header"><strong>${c.title}</strong><span>${status}</span></div><div class="cp-date">${c.date}</div><ul>${c.tasks.map(t => `<li>${t}</li>`).join('')}</ul>`;
+    cp.appendChild(item);
   });
 }
 
-// ===== SUMMARY GENERATION =====
+// ============================================
+// SUMMARY GENERATION
+// ============================================
 function generateDailySummary() {
   const dayNum = dayNumber(currentDate);
-  const phase = getPhaseForDay(dayNum);
-  const phaseData = PHASES[phase];
+  const phase = getCurrentPhase(currentDate);
+  const workout = getWorkoutForDate(currentDate);
+  const plan = getNutritionPlan(currentDate);
 
-  const nutritionDone = NUTRITION_PLAN.filter(t => state.tasks[t.id]);
-  const nutritionMissed = NUTRITION_PLAN.filter(t => !state.tasks[t.id]);
-  const workoutDone = phaseData.workout.filter(t => state.tasks[t.id]);
-  const workoutMissed = phaseData.workout.filter(t => !state.tasks[t.id]);
-  const habitsDone = HABITS_PLAN.filter(t => state.tasks[t.id]);
-  const habitsMissed = HABITS_PLAN.filter(t => !state.tasks[t.id]);
+  const nutDone = plan.filter(p => state.tasks[p.id]);
+  const nutMissed = plan.filter(p => !state.tasks[p.id]);
+
+  const workoutTasks = workout.id === 'class' ? (state.classChoice ? [{id: 'class_attended', title: `Class: ${state.classChoice}`}] : []) : getWorkoutTasks(workout);
+  const wDone = workoutTasks.filter(t => state.tasks[t.id]);
+  const wMissed = workoutTasks.filter(t => !state.tasks[t.id]);
+  const habDone = HABITS_PLAN.filter(t => state.tasks[t.id]);
+  const habMissed = HABITS_PLAN.filter(t => !state.tasks[t.id]);
 
   const liters = (state.water * 0.25).toFixed(2).replace(/\.?0+$/, '');
+  const dayTypeLabel = state.dayType === 'normal' ? '' : ` [${state.dayType.toUpperCase()} day]`;
 
-  let summary = `Day ${dayNum} log (${formatDate(currentDate)}):\n\n`;
-  summary += `STATS\n`;
-  summary += `- Weight: ${state.weight ? state.weight + ' kg' : 'not logged'}\n`;
-  summary += `- Sleep: ${state.sleep ? state.sleep + ' hrs' : 'not logged'}\n`;
-  summary += `- Energy: ${state.energy}/10\n`;
-  summary += `- Mood: ${state.mood}/10\n`;
-  summary += `- Sciatica: ${state.sciatica}/10\n\n`;
-  summary += `WATER: ${liters}L / 3.5L target\n\n`;
-  summary += `NUTRITION (${nutritionDone.length}/${NUTRITION_PLAN.length} meals)\n`;
-  summary += `- Eaten: ${nutritionDone.map(t => t.title).join(', ') || 'none'}\n`;
-  if (nutritionMissed.length) summary += `- Missed: ${nutritionMissed.map(t => t.title).join(', ')}\n`;
-  summary += `\nWORKOUT (${workoutDone.length}/${phaseData.workout.length} exercises) · ${phaseData.name}\n`;
-  if (workoutDone.length === phaseData.workout.length) {
-    summary += `- Completed full session\n`;
-  } else if (workoutDone.length === 0) {
-    summary += `- Did not work out\n`;
+  let s = `Day ${dayNum} log (${formatDate(currentDate)})${dayTypeLabel}:\n\n`;
+  s += `STATS\n`;
+  s += `- Weight: ${state.weight ? state.weight + ' kg' : 'not logged'}\n`;
+  s += `- Sleep: ${state.sleep ? state.sleep + ' hrs' : 'not logged'}\n`;
+  s += `- Energy: ${state.energy}/10\n- Mood: ${state.mood}/10\n- Sciatica: ${state.sciatica}/10\n`;
+  if (state.caffeine !== null && state.caffeine !== '') s += `- Caffeine: ${state.caffeine} cups\n`;
+  s += `\nWATER: ${liters}L / ${TARGET_WATER_L}L\n\n`;
+
+  s += `NUTRITION (${nutDone.length}/${plan.length})\n`;
+  s += `- Eaten: ${nutDone.map(t => `${t.title} (${t.meal.name})`).join(', ') || 'none'}\n`;
+  if (nutMissed.length) s += `- Missed: ${nutMissed.map(t => t.title).join(', ')}\n`;
+
+  const totalKcal = nutDone.reduce((sum, t) => sum + t.meal.kcal, 0);
+  const totalP = nutDone.reduce((sum, t) => sum + (t.meal.protein || 0), 0);
+  s += `- Approx eaten: ${totalKcal} kcal / ${totalP}g protein\n\n`;
+
+  s += `WORKOUT (${wDone.length}/${workoutTasks.length}) · ${workout.icon} ${workout.name}\n`;
+  if (workoutTasks.length === 0) {
+    s += `- No workout (rest/festive day)\n`;
+  } else if (wDone.length === workoutTasks.length) {
+    s += `- Full session completed\n`;
+  } else if (wDone.length === 0) {
+    s += `- Did not work out\n`;
   } else {
-    summary += `- Partial: did ${workoutDone.length} of ${phaseData.workout.length} exercises\n`;
-    summary += `- Skipped: ${workoutMissed.map(t => t.title).join(', ')}\n`;
+    s += `- Partial — did ${wDone.length} of ${workoutTasks.length}\n`;
+    if (wMissed.length) s += `- Skipped: ${wMissed.map(t => t.title).join(', ')}\n`;
   }
-  summary += `\nHABITS (${habitsDone.length}/${HABITS_PLAN.length})\n`;
-  if (habitsMissed.length) summary += `- Missed: ${habitsMissed.map(t => t.title).join(', ')}\n`;
-  if (state.notes) summary += `\nNOTES\n${state.notes}\n`;
-  summary += `\nPlease give me my daily summary (wins, struggles, patterns) and tomorrow's specific plan.`;
-
-  return summary;
+  s += `\nHABITS (${habDone.length}/${HABITS_PLAN.length})\n`;
+  if (habMissed.length) s += `- Missed: ${habMissed.map(t => t.title).join(', ')}\n`;
+  if (state.notes) s += `\nNOTES\n${state.notes}\n`;
+  if (state.symptoms) s += `\nSYMPTOMS\n${state.symptoms}\n`;
+  s += `\nPlease give me my daily summary (wins, struggles, patterns) and tomorrow's specific plan.`;
+  return s;
 }
 
 function generateWeeklySummary() {
@@ -696,63 +1179,43 @@ function generateWeeklySummary() {
     const s = loadDay(d);
     if (s) days.push({ date: d, state: s });
   }
+  if (!days.length) return 'No data logged in the last 7 days.';
 
-  if (days.length === 0) {
-    return 'No data logged in the last 7 days.';
-  }
-
-  let summary = `Weekly review — last ${days.length} days:\n\n`;
-
-  // Weight trend
   const weights = days.filter(d => d.state.weight).map(d => d.state.weight);
-  if (weights.length >= 2) {
-    const change = weights[weights.length - 1] - weights[0];
-    summary += `WEIGHT: ${weights[0]} → ${weights[weights.length - 1]} kg (${change >= 0 ? '+' : ''}${change.toFixed(1)} kg)\n\n`;
-  } else if (weights.length === 1) {
-    summary += `WEIGHT: ${weights[0]} kg (only 1 day logged)\n\n`;
-  }
-
-  // Aggregate stats
   const sleeps = days.filter(d => d.state.sleep).map(d => d.state.sleep);
   const energies = days.map(d => d.state.energy);
   const moods = days.map(d => d.state.mood);
   const sciaticas = days.map(d => d.state.sciatica);
   const waters = days.map(d => (d.state.water * 0.25));
-
   const avg = arr => arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1) : '—';
 
-  summary += `AVERAGES\n`;
-  summary += `- Sleep: ${avg(sleeps)} hrs\n`;
-  summary += `- Energy: ${avg(energies)}/10\n`;
-  summary += `- Mood: ${avg(moods)}/10\n`;
-  summary += `- Sciatica: ${avg(sciaticas)}/10\n`;
-  summary += `- Water: ${avg(waters)}L/day\n\n`;
-
-  // Adherence
-  summary += `DAILY ADHERENCE\n`;
-  days.forEach(d => {
-    const dayNum = dayNumber(d.date);
-    const phase = getPhaseForDay(dayNum);
-    const allTasks = [...NUTRITION_PLAN, ...PHASES[phase].workout, ...HABITS_PLAN];
-    const doneCount = allTasks.filter(t => d.state.tasks && d.state.tasks[t.id]).length;
-    const pct = Math.round((doneCount / allTasks.length) * 100);
-    summary += `- ${formatDate(d.date)}: ${pct}% (workout: ${PHASES[phase].workout.filter(t => d.state.tasks && d.state.tasks[t.id]).length}/${PHASES[phase].workout.length})\n`;
-  });
-
-  // Notes
-  const allNotes = days.filter(d => d.state.notes).map(d => `${formatDate(d.date)}: ${d.state.notes}`);
-  if (allNotes.length) {
-    summary += `\nNOTES THIS WEEK\n${allNotes.join('\n')}\n`;
+  let s = `Weekly review — last ${days.length} days:\n\n`;
+  if (weights.length >= 2) {
+    s += `WEIGHT: ${weights[0]} → ${weights[weights.length - 1]} kg (Δ ${(weights[weights.length - 1] - weights[0]).toFixed(1)} kg)\n\n`;
+  } else if (weights.length === 1) {
+    s += `WEIGHT: ${weights[0]} kg (only 1 day logged)\n\n`;
   }
-
-  summary += `\nPlease give me my weekly deep-dive: trends, what's working, what's not, adjustments for next week, and whether I'm on track for Aug 20.`;
-  return summary;
+  s += `AVERAGES\n`;
+  s += `- Sleep: ${avg(sleeps)} hrs\n- Energy: ${avg(energies)}/10\n- Mood: ${avg(moods)}/10\n- Sciatica: ${avg(sciaticas)}/10\n- Water: ${avg(waters)}L/day\n\n`;
+  s += `DAILY ADHERENCE\n`;
+  days.forEach(d => {
+    const pct = dayAdherencePct(d.date, d.state);
+    s += `- ${formatDate(d.date)} [${d.state.dayType || 'normal'}]: ${pct}%\n`;
+  });
+  const notes = days.filter(d => d.state.notes).map(d => `${formatDate(d.date)}: ${d.state.notes}`);
+  if (notes.length) s += `\nNOTES\n${notes.join('\n')}\n`;
+  const sympts = days.filter(d => d.state.symptoms).map(d => `${formatDate(d.date)}: ${d.state.symptoms}`);
+  if (sympts.length) s += `\nSYMPTOMS\n${sympts.join('\n')}\n`;
+  s += `\nPlease give me my weekly deep-dive: trends, what's working, what's not, adjustments for next week, am I on track for Aug 20.`;
+  return s;
 }
 
-// ===== ACTIONS =====
+// ============================================
+// UTILITIES
+// ============================================
 function copyToClipboard(text) {
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(() => showToast('Copied! Paste in Claude chat'));
+    navigator.clipboard.writeText(text).then(() => showToast('Copied — paste in Claude chat'));
   } else {
     const ta = document.createElement('textarea');
     ta.value = text;
@@ -760,21 +1223,17 @@ function copyToClipboard(text) {
     ta.style.left = '-9999px';
     document.body.appendChild(ta);
     ta.select();
-    try {
-      document.execCommand('copy');
-      showToast('Copied! Paste in Claude chat');
-    } catch {
-      showToast('Could not copy — long-press to copy manually');
-    }
+    try { document.execCommand('copy'); showToast('Copied — paste in Claude chat'); }
+    catch { showToast('Could not copy'); }
     document.body.removeChild(ta);
   }
 }
 
 function showToast(msg) {
-  const toast = document.getElementById('toast');
-  toast.textContent = msg;
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 2500);
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
 }
 
 function switchTab(tab) {
@@ -782,107 +1241,222 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
   document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
-  if (tab === 'history') renderHistory();
-  if (tab === 'plan') renderPlan();
+  if (tab === 'meals') renderMealsTab();
+  if (tab === 'plan') renderPlanTab();
+  if (tab === 'dashboard') renderDashboard();
   window.scrollTo(0, 0);
 }
 
-// ===== EVENT LISTENERS =====
-document.getElementById('prev-day-btn').addEventListener('click', () => {
-  currentDate = new Date(currentDate.getTime() - 86400000);
+// ============================================
+// WHY / THEME
+// ============================================
+function openWhy() {
+  document.getElementById('why-input').value = localStorage.getItem('fit:why') || '';
+  document.getElementById('why-modal').classList.remove('hidden');
+}
+
+function closeWhy() {
+  document.getElementById('why-modal').classList.add('hidden');
+}
+
+function saveWhy() {
+  const val = document.getElementById('why-input').value.trim();
+  if (val) localStorage.setItem('fit:why', val);
+  else localStorage.removeItem('fit:why');
+  closeWhy();
+  render();
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('fit:theme', next);
+  // Re-draw charts with new colors
+  setTimeout(() => renderDashboard(), 50);
+}
+
+function applyStoredTheme() {
+  const saved = localStorage.getItem('fit:theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+}
+
+// ============================================
+// INIT
+// ============================================
+function initApp() {
+  applyStoredTheme();
   state = loadDay(currentDate) || getDefaultState();
   render();
-});
+  renderMealsTab();
+  renderPlanTab();
+  bindAppEvents();
+}
 
-document.getElementById('next-day-btn').addEventListener('click', () => {
-  currentDate = new Date(currentDate.getTime() + 86400000);
-  state = loadDay(currentDate) || getDefaultState();
-  render();
-});
-
-document.getElementById('weight-input').addEventListener('input', (e) => {
-  state.weight = parseFloat(e.target.value) || null;
-  saveDay(currentDate, state);
-});
-
-document.getElementById('sleep-input').addEventListener('input', (e) => {
-  state.sleep = parseFloat(e.target.value) || null;
-  saveDay(currentDate, state);
-});
-
-document.getElementById('energy-slider').addEventListener('input', (e) => {
-  state.energy = parseInt(e.target.value);
-  document.getElementById('energy-value').textContent = state.energy;
-  saveDay(currentDate, state);
-});
-
-document.getElementById('mood-slider').addEventListener('input', (e) => {
-  state.mood = parseInt(e.target.value);
-  document.getElementById('mood-value').textContent = state.mood;
-  saveDay(currentDate, state);
-});
-
-document.getElementById('sciatica-slider').addEventListener('input', (e) => {
-  state.sciatica = parseInt(e.target.value);
-  const el = document.getElementById('sciatica-value');
-  el.textContent = state.sciatica;
-  el.className = 'slider-value sciatica-value' +
-    (state.sciatica >= 7 ? ' high' : state.sciatica >= 4 ? ' medium' : '');
-  saveDay(currentDate, state);
-});
-
-document.getElementById('notes-input').addEventListener('input', (e) => {
-  state.notes = e.target.value;
-  clearTimeout(window._notesSaveTimer);
-  window._notesSaveTimer = setTimeout(() => saveDay(currentDate, state), 400);
-});
-
-document.getElementById('copy-summary-btn').addEventListener('click', () => {
-  copyToClipboard(generateDailySummary());
-});
-
-document.getElementById('copy-weekly-btn').addEventListener('click', () => {
-  copyToClipboard(generateWeeklySummary());
-});
-
-document.getElementById('reset-day-btn').addEventListener('click', () => {
-  if (confirm('Reset all data for this day?')) {
-    state = getDefaultState();
-    saveDay(currentDate, state);
+function bindAppEvents() {
+  // Navigation
+  document.getElementById('prev-day-btn').addEventListener('click', () => {
+    currentDate = new Date(currentDate.getTime() - 86400000);
+    state = loadDay(currentDate) || getDefaultState();
     render();
-  }
-});
+  });
+  document.getElementById('next-day-btn').addEventListener('click', () => {
+    currentDate = new Date(currentDate.getTime() + 86400000);
+    state = loadDay(currentDate) || getDefaultState();
+    render();
+  });
+  document.getElementById('theme-btn').addEventListener('click', toggleTheme);
 
-document.getElementById('export-btn').addEventListener('click', () => {
-  const data = {};
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key && key.startsWith('fit:')) {
-      data[key] = JSON.parse(localStorage.getItem(key));
+  // Tabs
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  });
+
+  // Day type
+  document.querySelectorAll('.daytype-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.dayType = btn.dataset.type;
+      if (state.dayType !== 'class') state.classChoice = null;
+      saveDay(currentDate, state);
+      render();
+    });
+  });
+
+  // Inputs
+  document.getElementById('weight-input').addEventListener('input', e => {
+    state.weight = parseFloat(e.target.value) || null;
+    saveDay(currentDate, state);
+    if (state.weight) updateProgress();
+  });
+  document.getElementById('weight-input').addEventListener('blur', () => renderDashboard());
+  document.getElementById('sleep-input').addEventListener('input', e => {
+    state.sleep = parseFloat(e.target.value) || null;
+    saveDay(currentDate, state);
+  });
+  document.getElementById('caffeine-input').addEventListener('input', e => {
+    state.caffeine = parseInt(e.target.value) || null;
+    saveDay(currentDate, state);
+  });
+
+  // Sliders
+  document.getElementById('energy-slider').addEventListener('input', e => {
+    state.energy = parseInt(e.target.value);
+    document.getElementById('energy-value').textContent = state.energy;
+    saveDay(currentDate, state);
+  });
+  document.getElementById('mood-slider').addEventListener('input', e => {
+    state.mood = parseInt(e.target.value);
+    document.getElementById('mood-value').textContent = state.mood;
+    saveDay(currentDate, state);
+  });
+  document.getElementById('sciatica-slider').addEventListener('input', e => {
+    state.sciatica = parseInt(e.target.value);
+    const el = document.getElementById('sciatica-value');
+    el.textContent = state.sciatica;
+    el.className = 'slider-value sciatica-value' + (state.sciatica >= 7 ? ' high' : state.sciatica >= 4 ? ' medium' : '');
+    saveDay(currentDate, state);
+  });
+
+  // Notes
+  document.getElementById('notes-input').addEventListener('input', e => {
+    state.notes = e.target.value;
+    clearTimeout(window._notesTimer);
+    window._notesTimer = setTimeout(() => saveDay(currentDate, state), 400);
+  });
+  document.getElementById('symptom-input').addEventListener('input', e => {
+    state.symptoms = e.target.value;
+    clearTimeout(window._symTimer);
+    window._symTimer = setTimeout(() => saveDay(currentDate, state), 400);
+  });
+
+  // Change workout button
+  document.getElementById('change-workout-btn').addEventListener('click', () => {
+    const modal = document.getElementById('workout-swap-modal');
+    const list = document.getElementById('workout-swap-list');
+    list.innerHTML = '';
+    Object.values(WORKOUT_SPLITS).forEach(wk => {
+      const btn = document.createElement('div');
+      btn.className = 'meal-swap-option';
+      btn.innerHTML = `<div class="meal-swap-header"><span class="meal-swap-name">${wk.icon} ${wk.name}</span></div><div class="meal-swap-detail">${wk.focus || ''}</div>`;
+      btn.addEventListener('click', () => {
+        state.workoutOverride = wk.id;
+        if (wk.id !== 'class') state.classChoice = null;
+        saveDay(currentDate, state);
+        closeWorkoutSwap();
+        render();
+        showToast('Workout changed');
+      });
+      list.appendChild(btn);
+    });
+    modal.classList.remove('hidden');
+  });
+
+  // Copy buttons
+  document.getElementById('copy-summary-btn').addEventListener('click', () => copyToClipboard(generateDailySummary()));
+  document.getElementById('weekly-summary-btn').addEventListener('click', () => copyToClipboard(generateWeeklySummary()));
+
+  // Reset
+  document.getElementById('reset-day-btn').addEventListener('click', () => {
+    if (confirm('Reset all data for this day?')) {
+      state = getDefaultState();
+      saveDay(currentDate, state);
+      render();
     }
-  }
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `fitness-tracker-${dateKey(new Date())}.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  showToast('Data exported');
-});
+  });
 
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
-});
+  // Export
+  document.getElementById('export-btn').addEventListener('click', () => {
+    const data = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && (k.startsWith('fit:') || k.startsWith('meal-override:'))) {
+        try { data[k] = JSON.parse(localStorage.getItem(k)); }
+        catch { data[k] = localStorage.getItem(k); }
+      }
+    }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `fitness-tracker-${dateKey(new Date())}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Data exported');
+  });
 
-// ===== INIT =====
-PinLock.init().then(unlocked => {
-  if (unlocked) render();
-});
+  // Helper buttons
+  document.getElementById('helper-view-btn').addEventListener('click', () => openHelperView(currentDate));
+  document.getElementById('full-helper-btn').addEventListener('click', () => openHelperView(currentDate));
+  document.getElementById('grocery-list-btn').addEventListener('click', openGrocery);
 
-// Service worker for offline
+  // Why
+  document.getElementById('why-card').addEventListener('click', openWhy);
+}
+
+function closeWorkoutSwap() {
+  document.getElementById('workout-swap-modal').classList.add('hidden');
+}
+
+// Expose modal closers for inline onclick
+window.closeMealSwap = closeMealSwap;
+window.closeWorkoutSwap = closeWorkoutSwap;
+window.closeHelper = closeHelper;
+window.closeGrocery = closeGrocery;
+window.closeWhy = closeWhy;
+window.closeExerciseModal = closeExerciseModal;
+window.printHelper = printHelper;
+window.shareHelper = shareHelper;
+window.copyGrocery = copyGrocery;
+window.saveWhy = saveWhy;
+
+// ============================================
+// BOOT
+// ============================================
+PinLock.init();
+
+// Service worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').catch(() => {});

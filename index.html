@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Fit Tracker">
-<meta name="theme-color" content="#0f172a">
+<meta name="theme-color" content="#0a0a0f">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <title>Fit Tracker</title>
@@ -21,13 +21,10 @@
     <h2 class="lock-title" id="lock-title">Enter PIN</h2>
     <p class="lock-subtitle" id="lock-subtitle">4 digits to unlock</p>
     <div class="pin-dots" id="pin-dots">
-      <div class="pin-dot"></div>
-      <div class="pin-dot"></div>
-      <div class="pin-dot"></div>
-      <div class="pin-dot"></div>
+      <div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div><div class="pin-dot"></div>
     </div>
     <div class="pin-error" id="pin-error"></div>
-    <div class="pin-pad" id="pin-pad">
+    <div class="pin-pad">
       <button class="pin-key" data-digit="1">1</button>
       <button class="pin-key" data-digit="2">2</button>
       <button class="pin-key" data-digit="3">3</button>
@@ -47,15 +44,17 @@
 
 <div id="app" class="hidden">
 
-  <!-- HEADER -->
   <header class="app-header">
     <div class="header-row">
-      <button class="icon-btn" id="prev-day-btn" aria-label="Previous day">‹</button>
+      <button class="icon-btn" id="prev-day-btn" aria-label="Previous">‹</button>
       <div class="header-title">
         <h1 id="day-title">Day 1</h1>
         <p id="day-subtitle">Mon, May 25</p>
       </div>
-      <button class="icon-btn" id="next-day-btn" aria-label="Next day">›</button>
+      <div class="header-actions">
+        <button class="icon-btn" id="theme-btn" aria-label="Toggle theme">◐</button>
+        <button class="icon-btn" id="next-day-btn" aria-label="Next">›</button>
+      </div>
     </div>
     <div class="progress-bar-wrap">
       <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
@@ -63,13 +62,89 @@
     </div>
   </header>
 
-  <!-- MAIN CONTENT -->
   <main id="main-content">
 
-    <!-- TODAY TAB -->
-    <section class="tab-content active" id="tab-today">
+    <!-- ===== DASHBOARD TAB ===== -->
+    <section class="tab-content active" id="tab-dashboard">
 
-      <!-- Quick stats -->
+      <div class="card why-card" id="why-card">
+        <p class="why-label">Why I'm doing this</p>
+        <p class="why-text" id="why-text">Tap to set your reason</p>
+      </div>
+
+      <div class="card">
+        <div class="card-row">
+          <div>
+            <div class="card-eyebrow">Current Phase</div>
+            <div class="phase-name" id="dash-phase-name">Foundation 🌱</div>
+          </div>
+          <div class="phase-day" id="dash-phase-day">Day 1/87</div>
+        </div>
+        <div class="phase-progress-bar"><div class="phase-progress-fill" id="phase-progress-fill"></div></div>
+        <p class="phase-meta" id="dash-phase-meta">Days remaining to Aug 20</p>
+      </div>
+
+      <div class="dash-grid">
+        <div class="dash-card">
+          <div class="dash-label">Weight</div>
+          <div class="dash-value" id="dash-weight">—</div>
+          <div class="dash-trend" id="dash-weight-trend"></div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-label">To go</div>
+          <div class="dash-value" id="dash-togo">—</div>
+          <div class="dash-trend">to 70 kg</div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-label">Streak</div>
+          <div class="dash-value" id="dash-streak">0</div>
+          <div class="dash-trend">days</div>
+        </div>
+        <div class="dash-card">
+          <div class="dash-label">7-day avg</div>
+          <div class="dash-value" id="dash-adherence">—</div>
+          <div class="dash-trend">adherence</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">Weight trend <span class="card-meta">Last 28 days</span></h2>
+        <canvas id="weight-chart" height="180"></canvas>
+        <p class="chart-summary" id="weight-summary"></p>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">Daily adherence <span class="card-meta">Last 14 days</span></h2>
+        <div id="adherence-bars"></div>
+      </div>
+
+      <div class="card">
+        <h2 class="card-title">Sleep & sciatica <span class="card-meta">Last 14 days</span></h2>
+        <canvas id="sleep-chart" height="140"></canvas>
+      </div>
+
+      <div class="card checkpoint-card" id="checkpoint-card">
+        <div class="card-eyebrow">Next Checkpoint</div>
+        <h2 class="card-title" id="checkpoint-title">Week 4 Reassessment</h2>
+        <p class="checkpoint-countdown" id="checkpoint-countdown"></p>
+        <ul class="checkpoint-tasks" id="checkpoint-tasks"></ul>
+      </div>
+
+      <div class="action-row">
+        <button class="btn btn-primary" id="weekly-summary-btn">📊 Generate weekly review for Claude</button>
+      </div>
+    </section>
+
+    <!-- ===== TODAY TAB ===== -->
+    <section class="tab-content" id="tab-today">
+
+      <div class="day-type-row">
+        <button class="daytype-btn active" data-type="normal">📅 Normal</button>
+        <button class="daytype-btn" data-type="class">🎵 Class</button>
+        <button class="daytype-btn" data-type="festive">🎉 Festive</button>
+        <button class="daytype-btn" data-type="rest">😌 Rest</button>
+      </div>
+
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-label">Weight</div>
@@ -82,13 +157,12 @@
           <div class="stat-unit">hrs</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Streak</div>
-          <div class="stat-input-display" id="streak-display">0</div>
-          <div class="stat-unit">days</div>
+          <div class="stat-label">Caffeine</div>
+          <input type="number" inputmode="numeric" id="caffeine-input" placeholder="0" class="stat-input">
+          <div class="stat-unit">cups</div>
         </div>
       </div>
 
-      <!-- Energy/Mood/Sciatica sliders -->
       <div class="card">
         <h2 class="card-title">How you feel</h2>
         <div class="slider-row">
@@ -108,178 +182,202 @@
         </div>
       </div>
 
-      <!-- Water tracking -->
       <div class="card">
-        <h2 class="card-title">Water <span class="card-meta" id="water-meta">0 / 3.5 L</span></h2>
+        <h2 class="card-title">Water <span class="card-meta" id="water-meta">0 / 4.0 L</span></h2>
         <div class="water-grid" id="water-grid"></div>
       </div>
 
-      <!-- Nutrition -->
-      <div class="card">
-        <h2 class="card-title">Nutrition <span class="card-meta" id="nutrition-meta"></span></h2>
-        <div id="nutrition-list"></div>
-        <p class="card-footer">Target: ~1,900 kcal · 140g protein · Mediterranean · halal</p>
-      </div>
-
-      <!-- Workout -->
       <div class="card">
         <h2 class="card-title">Workout <span class="card-meta" id="workout-meta"></span></h2>
-        <p class="phase-pill" id="phase-pill">Phase 0 · Foundation</p>
-        <p class="hint-text">Tap ▶ next to any exercise to watch a demo on YouTube</p>
+        <div class="workout-header">
+          <div class="workout-type" id="workout-type-display">🦵 Lower Body & Glutes</div>
+          <button class="link-btn" id="change-workout-btn">Change</button>
+        </div>
+        <p class="workout-focus" id="workout-focus"></p>
         <div id="workout-list"></div>
+        <div id="class-options" class="hidden">
+          <p class="hint-text">Pick today's class:</p>
+          <div id="class-options-list"></div>
+        </div>
       </div>
 
-      <!-- Daily habits -->
+      <div class="card">
+        <h2 class="card-title">Nutrition <span class="card-meta" id="nutrition-meta"></span></h2>
+        <p class="hint-text">Tap ⇆ to swap a meal · macros shown</p>
+        <div id="nutrition-list"></div>
+        <p class="card-footer" id="macros-footer">Target: 1,750 kcal · 160g protein · halal</p>
+      </div>
+
+      <div class="action-row">
+        <button class="btn btn-secondary" id="helper-view-btn">👨‍🍳 Helper view for today</button>
+      </div>
+
       <div class="card">
         <h2 class="card-title">Daily habits <span class="card-meta" id="habits-meta"></span></h2>
         <div id="habits-list"></div>
       </div>
 
-      <!-- Notes -->
       <div class="card">
         <h2 class="card-title">Notes</h2>
-        <textarea id="notes-input" placeholder="How did it go? Any wins, struggles, sciatica, surprises..."></textarea>
+        <textarea id="notes-input" placeholder="How did it go? Wins, struggles..."></textarea>
       </div>
 
-      <!-- Action buttons -->
+      <div class="card">
+        <h2 class="card-title">Symptom log <span class="card-meta">If sciatica flared or anything off</span></h2>
+        <textarea id="symptom-input" placeholder="What happened, when, what triggered it..."></textarea>
+      </div>
+
       <div class="action-row">
-        <button class="btn btn-primary" id="copy-summary-btn">
-          <span class="btn-icon">📋</span> Copy summary for Claude
-        </button>
+        <button class="btn btn-primary" id="copy-summary-btn">📋 Copy summary for Claude</button>
         <button class="btn btn-secondary" id="reset-day-btn">Reset today</button>
       </div>
 
     </section>
 
-    <!-- HISTORY TAB -->
-    <section class="tab-content" id="tab-history">
-      <div class="card">
-        <h2 class="card-title">Weight trend</h2>
-        <canvas id="weight-chart" height="160"></canvas>
-        <p class="chart-summary" id="weight-summary"></p>
-      </div>
+    <!-- ===== MEALS TAB ===== -->
+    <section class="tab-content" id="tab-meals">
 
       <div class="card">
-        <h2 class="card-title">Last 14 days</h2>
-        <div id="history-list"></div>
+        <h2 class="card-title">This week's meals</h2>
+        <p class="hint-text">Tap any day to see helper-ready details</p>
+        <div id="week-meals-list"></div>
       </div>
 
       <div class="action-row">
-        <button class="btn btn-primary" id="copy-weekly-btn">
-          <span class="btn-icon">📊</span> Copy weekly review for Claude
-        </button>
-        <button class="btn btn-secondary" id="export-btn">Export all data</button>
+        <button class="btn btn-primary" id="grocery-list-btn">🛒 Generate weekly grocery list</button>
+        <button class="btn btn-secondary" id="full-helper-btn">📋 Full week helper handover</button>
       </div>
+
+      <div class="card">
+        <h2 class="card-title">Approved foods reference</h2>
+        <details class="ref-details"><summary>Proteins (eat freely)</summary><p>Eggs, chicken breast, fish (salmon, hammour, tilapia, mackerel), Greek yogurt, lentils, chickpeas, paneer, tofu. Lean beef max 1×/week.</p></details>
+        <details class="ref-details"><summary>Carbs (controlled)</summary><p>Oats, brown rice, quinoa, whole grain bread (1-2 slices), sweet potato, 1 multigrain roti per meal max.</p></details>
+        <details class="ref-details"><summary>Fats (good fats)</summary><p>Extra virgin olive oil (2-3 tbsp/day), avocado (½/day), walnuts, almonds, chia, flax seeds.</p></details>
+        <details class="ref-details"><summary>Vegetables (unlimited)</summary><p>All leafy greens, broccoli, cauliflower, zucchini, eggplant, bell peppers, tomato, cucumber, onion, garlic.</p></details>
+        <details class="ref-details"><summary>Fruits (1-2/day max)</summary><p>Berries best · apple, pear, kiwi, orange · banana only pre-workout. AVOID mango, grapes (high fructose).</p></details>
+        <details class="ref-details"><summary>NEVER (12 weeks strict)</summary><p>Fried · white sugar/desserts · soft drinks · fruit juice · white bread/rice · packaged snacks · fast food · alcohol · processed meats.</p></details>
+      </div>
+
     </section>
 
-    <!-- PLAN TAB -->
+    <!-- ===== PLAN TAB ===== -->
     <section class="tab-content" id="tab-plan">
+
       <div class="card">
-        <h2 class="card-title">Goal</h2>
-        <p class="goal-text">Lose <strong>8–10 kg</strong> by <strong>20 Aug 2026</strong></p>
-        <p class="goal-text">Reverse Grade 1 fatty liver · Normalize ALT</p>
+        <h2 class="card-title">My goal</h2>
+        <p class="goal-text">Lose <strong>8-10 kg</strong> by <strong>20 Aug 2026</strong></p>
+        <p class="goal-text">Reverse Grade 1 fatty liver · Normalize ALT below 45</p>
         <div class="goal-progress" id="goal-progress"></div>
       </div>
 
       <div class="card">
-        <h2 class="card-title">Current phase</h2>
-        <div id="phase-info"></div>
+        <h2 class="card-title">Weekly schedule</h2>
+        <div id="weekly-schedule-list"></div>
       </div>
 
       <div class="card">
-        <h2 class="card-title">Approved foods</h2>
-        <details class="ref-details">
-          <summary>Proteins (eat freely)</summary>
-          <p>Eggs, chicken breast, fish (salmon, hammour, tilapia, mackerel), Greek yogurt, lentils, chickpeas, tofu. Lean beef/lamb max 1×/week.</p>
-        </details>
-        <details class="ref-details">
-          <summary>Carbs (controlled)</summary>
-          <p>Oats, brown rice, quinoa, whole grain bread (1–2 slices), sweet potato, 1 chapati per meal max.</p>
-        </details>
-        <details class="ref-details">
-          <summary>Fats (good fats)</summary>
-          <p>Extra virgin olive oil (2–3 tbsp/day), avocado (½/day), walnuts, almonds, chia, flax seeds.</p>
-        </details>
-        <details class="ref-details">
-          <summary>Vegetables (unlimited)</summary>
-          <p>All leafy greens, broccoli, cauliflower, zucchini, eggplant, bell peppers, tomato, cucumber, onion, garlic.</p>
-        </details>
-        <details class="ref-details">
-          <summary>Fruits (1–2/day max)</summary>
-          <p>Berries (best), apple, pear, kiwi, orange. AVOID mango, grapes. Banana only pre-workout.</p>
-        </details>
-        <details class="ref-details">
-          <summary>Drinks</summary>
-          <p>Black coffee (2–3 cups), green tea, water (3.5L), lemon water. AVOID juices, soft drinks, sugary tea.</p>
-        </details>
-      </div>
-
-      <div class="card">
-        <h2 class="card-title">Never foods (12 weeks strict)</h2>
-        <ul class="avoid-list">
-          <li>Anything fried</li>
-          <li>White sugar, desserts, ice cream</li>
-          <li>Soft drinks (even diet)</li>
-          <li>Fruit juice</li>
-          <li>White bread, white rice</li>
-          <li>Packaged snacks, chips</li>
-          <li>Fast food</li>
-          <li>Alcohol</li>
-          <li>Processed meats</li>
-        </ul>
+        <h2 class="card-title">All checkpoints</h2>
+        <div id="all-checkpoints"></div>
       </div>
 
       <div class="card">
         <h2 class="card-title">Sciatica safety</h2>
-        <details class="ref-details">
-          <summary>Exercises that HELP</summary>
-          <p>Dead hang from bar, glute bridge, bird dog, piriformis stretch, incline walking, swimming.</p>
-        </details>
-        <details class="ref-details">
-          <summary>Exercises to AVOID</summary>
-          <p>Seated leg press, seated cable row, heavy deadlifts, running on hard surfaces, sit-ups, Russian twists.</p>
-        </details>
+        <details class="ref-details"><summary>Exercises that HELP</summary><p>Dead hang from bar · glute bridge · bird dog · piriformis stretch · incline walking · swimming · cycling.</p></details>
+        <details class="ref-details"><summary>Exercises to AVOID</summary><p>Seated leg press · seated cable row · heavy deadlifts · sit-ups · Russian twists · high-impact running.</p></details>
       </div>
 
       <div class="card">
-        <h2 class="card-title">YouTube search terms</h2>
-        <p class="card-meta">Tap any to search</p>
-        <div id="youtube-terms"></div>
+        <h2 class="card-title">Data</h2>
+        <button class="btn btn-secondary" id="export-btn">📤 Export all data (JSON)</button>
       </div>
 
-      <div class="card">
-        <h2 class="card-title">Checkpoints</h2>
-        <ul class="checkpoint-list">
-          <li><strong>Week 4 (22 Jun):</strong> Photos + measurements</li>
-          <li><strong>Week 8 (20 Jul):</strong> Re-test liver function</li>
-          <li><strong>Week 12 (17 Aug):</strong> Final weigh-in + blood work</li>
-        </ul>
-      </div>
     </section>
 
   </main>
 
-  <!-- BOTTOM TAB BAR -->
   <nav class="tab-bar">
-    <button class="tab-btn active" data-tab="today">
-      <span class="tab-icon">●</span>
-      <span class="tab-label">Today</span>
-    </button>
-    <button class="tab-btn" data-tab="history">
-      <span class="tab-icon">▦</span>
-      <span class="tab-label">History</span>
-    </button>
-    <button class="tab-btn" data-tab="plan">
-      <span class="tab-icon">★</span>
-      <span class="tab-label">Plan</span>
-    </button>
+    <button class="tab-btn active" data-tab="dashboard"><span class="tab-icon">▦</span><span class="tab-label">Dashboard</span></button>
+    <button class="tab-btn" data-tab="today"><span class="tab-icon">●</span><span class="tab-label">Today</span></button>
+    <button class="tab-btn" data-tab="meals"><span class="tab-icon">🍽</span><span class="tab-label">Meals</span></button>
+    <button class="tab-btn" data-tab="plan"><span class="tab-icon">★</span><span class="tab-label">Plan</span></button>
   </nav>
 
 </div>
 
-<!-- Toast for feedback -->
 <div id="toast" class="toast"></div>
 
+<div id="meal-swap-modal" class="modal hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="meal-swap-title">Swap meal</h3>
+      <button class="modal-close" onclick="closeMealSwap()" aria-label="Close">×</button>
+    </div>
+    <p class="modal-hint">Tap any option to use it today</p>
+    <div id="meal-swap-list"></div>
+  </div>
+</div>
+
+<div id="workout-swap-modal" class="modal hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Change workout</h3>
+      <button class="modal-close" onclick="closeWorkoutSwap()" aria-label="Close">×</button>
+    </div>
+    <p class="modal-hint">Pick a different workout for today</p>
+    <div id="workout-swap-list"></div>
+  </div>
+</div>
+
+<div id="helper-modal" class="modal hidden">
+  <div class="modal-content modal-large">
+    <div class="modal-header">
+      <h3 id="helper-modal-title">Helper handover</h3>
+      <div class="modal-actions">
+        <button class="link-btn" onclick="printHelper()">🖨 Print</button>
+        <button class="link-btn" onclick="shareHelper()">↗ Share</button>
+        <button class="modal-close" onclick="closeHelper()" aria-label="Close">×</button>
+      </div>
+    </div>
+    <div id="helper-content"></div>
+  </div>
+</div>
+
+<div id="grocery-modal" class="modal hidden">
+  <div class="modal-content modal-large">
+    <div class="modal-header">
+      <h3>Weekly grocery list</h3>
+      <div class="modal-actions">
+        <button class="link-btn" onclick="copyGrocery()">📋 Copy</button>
+        <button class="modal-close" onclick="closeGrocery()" aria-label="Close">×</button>
+      </div>
+    </div>
+    <div id="grocery-content"></div>
+  </div>
+</div>
+
+<div id="why-modal" class="modal hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>Why I'm doing this</h3>
+      <button class="modal-close" onclick="closeWhy()" aria-label="Close">×</button>
+    </div>
+    <p class="modal-hint">A short, honest reason. You'll see this every time you open the app.</p>
+    <textarea id="why-input" placeholder="To reverse fatty liver, fit my clothes again, be healthy for my family..."></textarea>
+    <button class="btn btn-primary" style="margin-top: 12px;" onclick="saveWhy()">Save</button>
+  </div>
+</div>
+
+<div id="exercise-modal" class="modal hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="exercise-modal-title">Exercise</h3>
+      <button class="modal-close" onclick="closeExerciseModal()" aria-label="Close">×</button>
+    </div>
+    <div id="exercise-modal-body"></div>
+  </div>
+</div>
+
+<script src="data.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

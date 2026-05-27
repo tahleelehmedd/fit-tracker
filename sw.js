@@ -1,9 +1,10 @@
-const CACHE = 'fit-tracker-v3';
+const CACHE = 'fit-tracker-v5';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './app.js',
+  './data.js',
   './manifest.json'
 ];
 

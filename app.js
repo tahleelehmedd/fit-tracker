@@ -1723,6 +1723,22 @@ function bindAppEvents() {
   const backupBtn = document.getElementById('backup-btn');
   if (backupBtn) backupBtn.addEventListener('click', exportAllData);
 
+  // Import data from JSON backup
+  const importBtn = document.getElementById('import-btn');
+  const importInput = document.getElementById('import-file-input');
+  if (importBtn && importInput) {
+    importBtn.addEventListener('click', () => importInput.click());
+    importInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        if (confirm('Restore data from this backup? Any existing data will be merged (new data wins on conflicts).')) {
+          importData(file);
+        }
+        e.target.value = ''; // reset so same file can be re-selected
+      }
+    });
+  }
+
   document.getElementById('helper-view-btn').addEventListener('click', () => openHelperView(currentDate));
   document.getElementById('full-helper-btn').addEventListener('click', () => openHelperView(currentDate));
   document.getElementById('grocery-list-btn').addEventListener('click', openGrocery);
@@ -1749,6 +1765,45 @@ function exportAllData() {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
   showToast('Backup downloaded');
+}
+
+function importData(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      let imported = 0;
+      let skipped = 0;
+
+      Object.entries(data).forEach(([key, value]) => {
+        // Only import keys that look like our data
+        if (!key.startsWith('fit:') && !key.startsWith('meal-override:') && !key.startsWith('comp-swap:') && !key.startsWith('fit-backup:')) {
+          skipped++;
+          return;
+        }
+        try {
+          const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
+          localStorage.setItem(key, stringValue);
+          imported++;
+        } catch (err) {
+          skipped++;
+        }
+      });
+
+      showToast(`✓ Restored ${imported} entries`);
+      setTimeout(() => {
+        state = loadDay(currentDate) || getDefaultState();
+        render();
+      }, 500);
+    } catch (err) {
+      alert('Could not read backup file. Make sure it\'s the JSON file exported from the app.\n\nError: ' + err.message);
+    }
+  };
+  reader.onerror = function() {
+    alert('Could not read the file. Please try again.');
+  };
+  reader.readAsText(file);
 }
 
 // Expose closers for inline onclick

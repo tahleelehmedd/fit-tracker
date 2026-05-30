@@ -375,6 +375,13 @@ function renderWorkout() {
   document.getElementById('workout-type-display').textContent = `${split.icon} ${split.name}`;
   document.getElementById('workout-focus').textContent = split.focus || '';
 
+  // Show "Change day type" button
+  const changeBtn = document.getElementById('change-workout-type-btn');
+  if (changeBtn && !changeBtn.dataset.bound) {
+    changeBtn.addEventListener('click', openWorkoutTypeSwap);
+    changeBtn.dataset.bound = 'true';
+  }
+
   const classOptionsDiv = document.getElementById('class-options');
   const list = document.getElementById('workout-list');
   list.innerHTML = '';
@@ -583,6 +590,71 @@ function openExerciseReplace(currentExId) {
     });
     list.appendChild(row);
   });
+  modal.classList.remove('hidden');
+}
+
+function openWorkoutTypeSwap() {
+  const modal = document.getElementById('exercise-swap-modal');
+  document.getElementById('exercise-swap-title').textContent = 'Change workout type';
+  const list = document.getElementById('exercise-swap-list');
+  list.innerHTML = '<p class="modal-hint">Pick a different workout for today. This replaces the day\'s plan.</p>';
+
+  const currentType = getWorkoutTypeForDate(currentDate);
+  const types = ['legs','push','pull','mobility','fullbody_hiit','class','rest'];
+
+  types.forEach(typeId => {
+    const wk = WORKOUT_SPLITS[typeId];
+    if (!wk) return;
+    const row = document.createElement('div');
+    row.className = 'meal-swap-option' + (typeId === currentType ? ' selected' : '');
+    row.innerHTML = `
+      <div class="meal-swap-header">
+        <span class="meal-swap-name">${wk.icon} ${wk.name}</span>
+        ${typeId === currentType ? '<span class="meal-swap-kcal">current</span>' : ''}
+      </div>
+      <div class="meal-swap-detail">${wk.focus || ''}</div>
+    `;
+    row.addEventListener('click', () => {
+      // Set override + reset day type if switching to/from class/rest
+      state.workoutOverride = typeId;
+      if (typeId === 'class') state.dayType = 'class';
+      else if (typeId === 'rest') state.dayType = 'rest';
+      else state.dayType = 'normal';
+      // Clear any customized exercise list since we're changing day type entirely
+      state.customExercises = null;
+      saveDay(currentDate, state);
+      closeExerciseSwap();
+      render();
+      showToast(`Switched to ${wk.name}`);
+    });
+    list.appendChild(row);
+  });
+
+  // Reset to default option
+  if (state.workoutOverride) {
+    const resetRow = document.createElement('div');
+    resetRow.className = 'meal-swap-option';
+    resetRow.style.marginTop = '12px';
+    resetRow.style.borderTop = '1px dashed var(--border)';
+    resetRow.style.paddingTop = '12px';
+    resetRow.innerHTML = `
+      <div class="meal-swap-header">
+        <span class="meal-swap-name">↺ Reset to default for this day</span>
+      </div>
+      <div class="meal-swap-detail">Use the weekly schedule default (${WORKOUT_SPLITS[getDefaultWorkoutForDate(currentDate)].name})</div>
+    `;
+    resetRow.addEventListener('click', () => {
+      state.workoutOverride = null;
+      state.dayType = 'normal';
+      state.customExercises = null;
+      saveDay(currentDate, state);
+      closeExerciseSwap();
+      render();
+      showToast('Reset to default');
+    });
+    list.appendChild(resetRow);
+  }
+
   modal.classList.remove('hidden');
 }
 

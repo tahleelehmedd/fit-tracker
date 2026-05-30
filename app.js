@@ -1,5 +1,5 @@
 /* ==================
-   FIT TRACKER v5 — APP LOGIC
+   FIT TRACKER v6 — APP LOGIC
    ================== */
 
 // ============================================
@@ -7,12 +7,10 @@
 // ============================================
 const PIN_KEY = 'fit:pin';
 const PIN_SESSION_KEY = 'fit:unlocked';
-const SESSION_DURATION = 1000 * 60 * 60 * 4; // 4 hours
+const SESSION_DURATION = 1000 * 60 * 60 * 4;
 
 const PinLock = {
-  buffer: '',
-  mode: 'verify',
-  firstPin: '',
+  buffer: '', mode: 'verify', firstPin: '',
 
   async hash(pin) {
     const enc = new TextEncoder();
@@ -22,20 +20,15 @@ const PinLock = {
   },
 
   hasPin() { return !!localStorage.getItem(PIN_KEY); },
-
   isUnlocked() {
     const ts = parseInt(sessionStorage.getItem(PIN_SESSION_KEY) || '0');
     return ts && (Date.now() - ts < SESSION_DURATION);
   },
-
-  markUnlocked() {
-    sessionStorage.setItem(PIN_SESSION_KEY, Date.now().toString());
-  },
+  markUnlocked() { sessionStorage.setItem(PIN_SESSION_KEY, Date.now().toString()); },
 
   async init() {
     const lockScreen = document.getElementById('lock-screen');
     const appEl = document.getElementById('app');
-
     if (this.isUnlocked()) {
       lockScreen.classList.add('hidden');
       appEl.classList.remove('hidden');
@@ -43,7 +36,6 @@ const PinLock = {
     }
     lockScreen.classList.remove('hidden');
     appEl.classList.add('hidden');
-
     if (this.hasPin()) {
       this.mode = 'verify';
       this.updateUI('Enter PIN', '4 digits to unlock');
@@ -63,66 +55,48 @@ const PinLock = {
     document.getElementById('pin-reset-btn').addEventListener('click', () => this.resetApp());
   },
 
-  press(digit) {
+  press(d) {
     if (this.buffer.length >= 4) return;
-    this.buffer += digit;
+    this.buffer += d;
     this.renderDots();
     this.clearError();
     if (this.buffer.length === 4) setTimeout(() => this.submit(), 150);
   },
-
-  backspace() {
-    this.buffer = this.buffer.slice(0, -1);
-    this.renderDots();
-    this.clearError();
-  },
-
+  backspace() { this.buffer = this.buffer.slice(0, -1); this.renderDots(); this.clearError(); },
   renderDots() {
-    document.querySelectorAll('.pin-dot').forEach((dot, i) => {
-      dot.classList.toggle('filled', i < this.buffer.length);
-    });
+    document.querySelectorAll('.pin-dot').forEach((dot, i) => dot.classList.toggle('filled', i < this.buffer.length));
   },
-
   showError(msg) {
     document.getElementById('pin-error').textContent = msg;
     document.getElementById('pin-dots').classList.add('shake');
     setTimeout(() => document.getElementById('pin-dots').classList.remove('shake'), 400);
   },
-
   clearError() { document.getElementById('pin-error').textContent = ''; },
-
-  updateUI(title, subtitle) {
-    document.getElementById('lock-title').textContent = title;
-    document.getElementById('lock-subtitle').textContent = subtitle;
-    this.buffer = '';
-    this.renderDots();
-    this.clearError();
+  updateUI(t, s) {
+    document.getElementById('lock-title').textContent = t;
+    document.getElementById('lock-subtitle').textContent = s;
+    this.buffer = ''; this.renderDots(); this.clearError();
   },
 
   async submit() {
     if (this.mode === 'setup') {
       this.firstPin = this.buffer;
       this.mode = 'confirm';
-      this.updateUI('Confirm PIN', 'Re-enter the same 4 digits');
+      this.updateUI('Confirm PIN', 'Re-enter same 4 digits');
     } else if (this.mode === 'confirm') {
       if (this.buffer === this.firstPin) {
-        const hashed = await this.hash(this.buffer);
-        localStorage.setItem(PIN_KEY, hashed);
+        const h = await this.hash(this.buffer);
+        localStorage.setItem(PIN_KEY, h);
         this.unlock();
       } else {
         this.showError("PINs don't match");
-        this.mode = 'setup';
-        this.firstPin = '';
+        this.mode = 'setup'; this.firstPin = '';
         setTimeout(() => this.updateUI('Set a PIN', 'Choose 4 digits'), 600);
       }
-    } else if (this.mode === 'verify') {
-      const hashed = await this.hash(this.buffer);
-      if (hashed === localStorage.getItem(PIN_KEY)) {
-        this.unlock();
-      } else {
-        this.showError('Wrong PIN');
-        setTimeout(() => { this.buffer = ''; this.renderDots(); }, 400);
-      }
+    } else {
+      const h = await this.hash(this.buffer);
+      if (h === localStorage.getItem(PIN_KEY)) this.unlock();
+      else { this.showError('Wrong PIN'); setTimeout(() => { this.buffer = ''; this.renderDots(); }, 400); }
     }
   },
 
@@ -138,7 +112,7 @@ const PinLock = {
     const keys = [];
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k && (k.startsWith('fit:') || k.startsWith('meal-override:') || k === PIN_KEY)) keys.push(k);
+      if (k && (k.startsWith('fit:') || k.startsWith('meal-override:') || k.startsWith('comp-swap:') || k === PIN_KEY)) keys.push(k);
     }
     keys.forEach(k => localStorage.removeItem(k));
     sessionStorage.clear();
@@ -147,13 +121,11 @@ const PinLock = {
 };
 
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && PinLock.hasPin() && !PinLock.isUnlocked()) {
-    location.reload();
-  }
+  if (document.visibilityState === 'visible' && PinLock.hasPin() && !PinLock.isUnlocked()) location.reload();
 });
 
 // ============================================
-// STATE
+// STATE & STORAGE
 // ============================================
 let currentDate = new Date();
 currentDate.setHours(0, 0, 0, 0);
@@ -164,9 +136,10 @@ function getDefaultState() {
     weight: null, sleep: null, caffeine: null,
     energy: 5, mood: 5, sciatica: 0,
     water: 0, tasks: {}, notes: '', symptoms: '',
-    dayType: 'normal',  // normal | class | festive | rest
-    workoutOverride: null,  // override default workout
-    classChoice: null  // which class if dayType=class
+    dayType: 'normal',
+    gymTiming: localStorage.getItem('fit:default-gym-timing') || 'evening',
+    classChoice: null, classCustom: '',
+    exerciseLog: {}  // exerciseId -> { sets: [{weight, reps, done}], notes }
   };
 }
 
@@ -175,14 +148,20 @@ function loadDay(d) {
     const raw = localStorage.getItem(`fit:${dateKey(d)}`);
     if (!raw) return null;
     const stored = JSON.parse(raw);
-    // Backwards-compat: merge with defaults so missing v5 fields don't break the UI
     return { ...getDefaultState(), ...stored };
   } catch { return null; }
 }
 
 function saveDay(d, s) {
-  try { localStorage.setItem(`fit:${dateKey(d)}`, JSON.stringify(s)); }
-  catch (e) { console.error(e); }
+  try {
+    // Auto-backup: keep last 3 versions
+    const key = `fit:${dateKey(d)}`;
+    const existing = localStorage.getItem(key);
+    if (existing) {
+      localStorage.setItem(`fit-backup:${dateKey(d)}`, existing);
+    }
+    localStorage.setItem(key, JSON.stringify(s));
+  } catch (e) { console.error(e); }
 }
 
 // ============================================
@@ -190,6 +169,7 @@ function saveDay(d, s) {
 // ============================================
 function getMealForSlot(slot, date) {
   const options = MEAL_LIBRARY[slot];
+  if (!options || !options.length) return null;
   const overrideKey = `meal-override:${dateKey(date)}:${slot}`;
   const override = localStorage.getItem(overrideKey);
   if (override) {
@@ -203,39 +183,98 @@ function setMealOverride(slot, date, mealId) {
   localStorage.setItem(`meal-override:${dateKey(date)}:${slot}`, mealId);
 }
 
+// Component swap: stored per item
+function getComponentSwap(date, itemId) {
+  return localStorage.getItem(`comp-swap:${dateKey(date)}:${itemId}`);
+}
+function setComponentSwap(date, itemId, newName) {
+  if (newName) localStorage.setItem(`comp-swap:${dateKey(date)}:${itemId}`, newName);
+  else localStorage.removeItem(`comp-swap:${dateKey(date)}:${itemId}`);
+}
+
+// Get nutrition plan for date, ordered by gym timing preset
 function getNutritionPlan(date) {
-  return [
-    { id: 'n1', slot: 'breakfast', title: 'Breakfast', meal: getMealForSlot('breakfast', date) },
-    { id: 'n2', slot: 'midmorning', title: 'Mid-morning', meal: getMealForSlot('midmorning', date) },
-    { id: 'n3', slot: 'lunch', title: 'Lunch', meal: getMealForSlot('lunch', date) },
-    { id: 'n4', slot: 'preworkout', title: 'Pre-workout', meal: getMealForSlot('preworkout', date) },
-    { id: 'n5', slot: 'postworkout', title: 'Post-workout', meal: getMealForSlot('postworkout', date) },
-    { id: 'n6', slot: 'dinner', title: 'Dinner', meal: getMealForSlot('dinner', date) }
+  const slot_meta = [
+    { slot: 'breakfast', id: 'n_breakfast', title: 'Breakfast', recommendedTime: '7:30 AM', gap: '—' },
+    { slot: 'midmorning', id: 'n_midmorning', title: 'Mid-morning', recommendedTime: '10:30 AM', gap: '3h after breakfast' },
+    { slot: 'lunch', id: 'n_lunch', title: 'Lunch', recommendedTime: '1:00 PM', gap: '2.5h after snack' },
+    { slot: 'preworkout', id: 'n_preworkout', title: 'Pre-workout', recommendedTime: '45 min before gym', gap: 'Light & quick' },
+    { slot: 'postworkout', id: 'n_postworkout', title: 'Post-workout', recommendedTime: 'Within 45 min of finishing', gap: 'Critical window' },
+    { slot: 'snack', id: 'n_snack', title: 'Optional snack', recommendedTime: 'If needed', gap: 'Only if hungry' },
+    { slot: 'dinner', id: 'n_dinner', title: 'Dinner', recommendedTime: '8:00 PM', gap: '3h before bed' }
   ];
+
+  const s = loadDay(date) || getDefaultState();
+  const timing = s.gymTiming || 'evening';
+  const order = GYM_TIMING_PRESETS[timing]?.order || GYM_TIMING_PRESETS.evening.order;
+
+  return order
+    .map(slotName => slot_meta.find(m => m.slot === slotName))
+    .filter(Boolean)
+    .map(meta => ({ ...meta, meal: getMealForSlot(meta.slot, date) }))
+    .filter(m => m.meal);
+}
+
+// Compute meal item display (applying component swap if any)
+function getItemDisplay(item, date) {
+  const swapName = getComponentSwap(date, item.id);
+  if (swapName && item.swap && COMPONENT_SWAPS[item.swap]) {
+    const opt = COMPONENT_SWAPS[item.swap].options.find(o => o.name === swapName);
+    if (opt) return { ...item, displayText: opt.name, kcal: opt.kcal, protein: opt.protein, swapped: true };
+  }
+  return { ...item, displayText: item.text, swapped: false };
 }
 
 // ============================================
 // WORKOUT HELPERS
 // ============================================
-function getWorkoutForDate(date) {
+function getWorkoutTypeForDate(date) {
   const s = loadDay(date);
-  if (s && s.workoutOverride) return WORKOUT_SPLITS[s.workoutOverride];
-  if (s && s.dayType === 'class') return WORKOUT_SPLITS.class;
-  if (s && s.dayType === 'rest') return WORKOUT_SPLITS.rest;
-  if (s && s.dayType === 'festive') return WORKOUT_SPLITS.rest;
-  return WORKOUT_SPLITS[getDefaultWorkoutForDate(date)];
+  if (s && s.workoutOverride) return s.workoutOverride;
+  if (s && s.dayType === 'class') return 'class';
+  if (s && s.dayType === 'rest') return 'rest';
+  if (s && s.dayType === 'festive') return 'rest';
+  return getDefaultWorkoutForDate(date);
 }
 
-function getWorkoutTasks(workout) {
-  if (!workout || !workout.exercises) return [];
-  return workout.exercises.map(exId => {
-    const ex = EXERCISES[exId];
-    return { id: `w_${exId}`, exerciseId: exId, title: ex ? ex.name : exId, meta: ex ? ex.cue : '', svg: ex ? ex.svg : '', video: ex ? ex.video : null };
-  });
+function getWorkoutSplit(date) {
+  return WORKOUT_SPLITS[getWorkoutTypeForDate(date)];
+}
+
+function getExerciseListForDate(date) {
+  const s = loadDay(date);
+  const workoutType = getWorkoutTypeForDate(date);
+  // User-customised list for this day?
+  if (s && s.customExercises && s.customExercises.length) return s.customExercises;
+  return DEFAULT_WORKOUTS[workoutType] || [];
+}
+
+function setCustomExercisesForDate(date, list) {
+  state.customExercises = list;
+  saveDay(date, state);
+}
+
+// Get exercise prescription with phase-adjusted weight
+function getPrescription(exerciseId, date) {
+  const ex = EXERCISES[exerciseId];
+  if (!ex) return null;
+  const phase = getCurrentPhase(date);
+  // Simple phase scaling: Phase 0 = bodyweight/light; Phase 1 = prescribed; Phase 2 = +20%
+  let weight = ex.weight;
+  if (phase.name === 'Foundation' && typeof weight === 'string' && /\d/.test(weight)) {
+    // Reduce numeric weights by 30% for foundation phase
+    weight = weight.replace(/(\d+)kg/g, (_, n) => {
+      const reduced = Math.max(2, Math.round(parseInt(n) * 0.7));
+      return `${reduced}kg`;
+    });
+  } else if (phase.name === 'Push' && typeof weight === 'string' && /\d/.test(weight)) {
+    weight = weight.replace(/(\d+)kg/g, (_, n) => `${Math.round(parseInt(n) * 1.2)}kg`);
+  }
+  return { ...ex, weight, phaseName: phase.name };
 }
 
 // ============================================
-// RENDERING
+// RENDERING — TOP-LEVEL
 // ============================================
 function render() {
   const dayNum = dayNumber(currentDate);
@@ -268,6 +307,9 @@ function render() {
   document.getElementById('notes-input').value = state.notes || '';
   document.getElementById('symptom-input').value = state.symptoms || '';
 
+  // Gym timing selector
+  renderGymTimingSelector();
+
   renderWater();
   renderWorkout();
   renderNutrition();
@@ -281,6 +323,31 @@ function render() {
   document.getElementById('why-text').textContent = why || 'Tap to set your reason';
 }
 
+function renderGymTimingSelector() {
+  const sel = document.getElementById('gym-timing-select');
+  if (!sel) return;
+  if (!sel.dataset.populated) {
+    sel.innerHTML = '';
+    Object.entries(GYM_TIMING_PRESETS).forEach(([key, val]) => {
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = `${val.icon} ${val.label}`;
+      sel.appendChild(opt);
+    });
+    sel.dataset.populated = 'true';
+    sel.addEventListener('change', e => {
+      state.gymTiming = e.target.value;
+      localStorage.setItem('fit:default-gym-timing', e.target.value);
+      saveDay(currentDate, state);
+      render();
+    });
+  }
+  sel.value = state.gymTiming || 'evening';
+}
+
+// ============================================
+// WATER
+// ============================================
 function renderWater() {
   const grid = document.getElementById('water-grid');
   grid.innerHTML = '';
@@ -291,6 +358,7 @@ function renderWater() {
     cup.addEventListener('click', () => {
       state.water = state.water === i ? i - 1 : i;
       saveDay(currentDate, state);
+      hapticTap();
       render();
     });
     grid.appendChild(cup);
@@ -299,34 +367,68 @@ function renderWater() {
   document.getElementById('water-meta').textContent = `${liters} / ${TARGET_WATER_L} L`;
 }
 
+// ============================================
+// WORKOUT RENDERING (with sets/reps/weight/swap)
+// ============================================
 function renderWorkout() {
-  const workout = getWorkoutForDate(currentDate);
-  document.getElementById('workout-type-display').textContent = `${workout.icon} ${workout.name}`;
-  document.getElementById('workout-focus').textContent = workout.focus || '';
+  const split = getWorkoutSplit(currentDate);
+  document.getElementById('workout-type-display').textContent = `${split.icon} ${split.name}`;
+  document.getElementById('workout-focus').textContent = split.focus || '';
 
+  const classOptionsDiv = document.getElementById('class-options');
   const list = document.getElementById('workout-list');
   list.innerHTML = '';
 
-  // Class day - show class picker if no choice yet
-  const classOptionsDiv = document.getElementById('class-options');
-  if (workout.id === 'class') {
+  if (split.id === 'class') {
     classOptionsDiv.classList.remove('hidden');
     const optList = document.getElementById('class-options-list');
     optList.innerHTML = '';
-    workout.classOptions.forEach(className => {
+    split.classOptions.forEach(cn => {
       const btn = document.createElement('button');
-      btn.className = 'class-option-btn' + (state.classChoice === className ? ' selected' : '');
-      btn.textContent = className;
+      btn.className = 'class-option-btn' + (state.classChoice === cn ? ' selected' : '');
+      btn.textContent = cn;
       btn.addEventListener('click', () => {
-        state.classChoice = className;
-        if (!state.tasks['class_attended']) state.tasks['class_attended'] = false;
+        state.classChoice = cn;
+        if (cn === 'Other (type in)') {
+          // Show input
+          document.getElementById('class-custom-wrap').classList.remove('hidden');
+          document.getElementById('class-custom-input').value = state.classCustom || '';
+          document.getElementById('class-custom-input').focus();
+        } else {
+          document.getElementById('class-custom-wrap').classList.add('hidden');
+          state.classCustom = '';
+        }
         saveDay(currentDate, state);
         render();
       });
       optList.appendChild(btn);
     });
+
+    // Class attended task
     if (state.classChoice) {
-      const row = createTaskRow({ id: 'class_attended', title: `Class: ${state.classChoice}`, meta: '45 min instructor-led', svg: '', video: state.classChoice.toLowerCase() + ' fitness class' });
+      const className = state.classChoice === 'Other (type in)' ? (state.classCustom || 'Class') : state.classChoice;
+      const taskId = 'class_attended';
+      const isDone = !!state.tasks[taskId];
+      const row = document.createElement('div');
+      row.className = 'task-item' + (isDone ? ' done' : '');
+      row.innerHTML = `
+        <div class="task-checkbox"></div>
+        <div class="task-content">
+          <div class="task-title">Attended: ${className}</div>
+          <div class="task-meta">45 min · instructor-led</div>
+        </div>
+        <button class="task-video-btn" aria-label="Watch class type">▶</button>
+      `;
+      row.querySelector('.task-video-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        window.open('https://www.youtube.com/results?search_query=' + encodeURIComponent(className + ' fitness class'), '_blank', 'noopener');
+      });
+      row.addEventListener('click', () => {
+        state.tasks[taskId] = !state.tasks[taskId];
+        saveDay(currentDate, state);
+        hapticTap();
+        render();
+      });
       list.appendChild(row);
     }
     document.getElementById('workout-meta').textContent = state.classChoice ? (state.tasks['class_attended'] ? '✓ Done' : 'Pending') : 'Pick class';
@@ -335,20 +437,33 @@ function renderWorkout() {
     classOptionsDiv.classList.add('hidden');
   }
 
-  const tasks = getWorkoutTasks(workout);
+  // Normal workout: list of exercises
+  const exerciseIds = getExerciseListForDate(currentDate);
   let done = 0;
-  tasks.forEach(item => {
-    if (state.tasks[item.id]) done++;
-    const row = createTaskRow(item);
+  exerciseIds.forEach(exId => {
+    const ex = getPrescription(exId, currentDate);
+    if (!ex) return;
+    const taskId = `w_${exId}`;
+    if (state.tasks[taskId]) done++;
+    const row = createExerciseRow(exId, ex, taskId);
     list.appendChild(row);
   });
-  document.getElementById('workout-meta').textContent = tasks.length ? `${done}/${tasks.length}` : '';
+
+  // Swap button to change exercise list
+  const swapAll = document.createElement('button');
+  swapAll.className = 'btn btn-secondary';
+  swapAll.style.marginTop = '12px';
+  swapAll.textContent = '+ Add / swap exercises';
+  swapAll.addEventListener('click', () => openExerciseSwap(getWorkoutTypeForDate(currentDate)));
+  list.appendChild(swapAll);
+
+  document.getElementById('workout-meta').textContent = exerciseIds.length ? `${done}/${exerciseIds.length}` : '';
 }
 
-function createTaskRow(item) {
-  const isDone = !!state.tasks[item.id];
+function createExerciseRow(exId, ex, taskId) {
+  const isDone = !!state.tasks[taskId];
   const row = document.createElement('div');
-  row.className = 'task-item' + (isDone ? ' done' : '');
+  row.className = 'task-item exercise-item' + (isDone ? ' done' : '');
 
   const checkbox = document.createElement('div');
   checkbox.className = 'task-checkbox';
@@ -356,159 +471,298 @@ function createTaskRow(item) {
 
   const content = document.createElement('div');
   content.className = 'task-content';
+
   const title = document.createElement('div');
   title.className = 'task-title';
-  title.textContent = item.title;
+  title.textContent = ex.name;
   content.appendChild(title);
-  if (item.meta) {
-    const meta = document.createElement('div');
-    meta.className = 'task-meta';
-    meta.textContent = item.meta;
-    content.appendChild(meta);
+
+  // Prescription line: sets x reps @ weight, rest
+  const prescription = document.createElement('div');
+  prescription.className = 'exercise-prescription';
+  const parts = [];
+  if (ex.sets > 1) parts.push(`${ex.sets} × ${ex.reps}`);
+  else parts.push(ex.reps);
+  if (ex.weight && ex.weight !== 'bodyweight' && ex.weight !== '') parts.push(`@ ${ex.weight}`);
+  if (ex.rest && ex.rest > 0) parts.push(`rest ${ex.rest}s`);
+  prescription.textContent = parts.join(' · ');
+  content.appendChild(prescription);
+
+  if (ex.cue) {
+    const cue = document.createElement('div');
+    cue.className = 'task-meta';
+    cue.textContent = ex.cue;
+    content.appendChild(cue);
   }
+
+  // Actual weight lifted field (only for weighted exercises)
+  if (ex.weight && /\d/.test(ex.weight) && ex.weight !== 'bodyweight') {
+    const actualLog = state.exerciseLog?.[exId];
+    const lastWeight = actualLog?.actualWeight || '';
+    const logRow = document.createElement('div');
+    logRow.className = 'exercise-log-row';
+    logRow.innerHTML = `
+      <span class="log-label">Actually lifted:</span>
+      <input type="text" class="log-input" placeholder="e.g. 5kg" value="${lastWeight}">
+      <span class="log-unit"></span>
+    `;
+    const input = logRow.querySelector('.log-input');
+    input.addEventListener('click', e => e.stopPropagation());
+    input.addEventListener('input', e => {
+      if (!state.exerciseLog) state.exerciseLog = {};
+      if (!state.exerciseLog[exId]) state.exerciseLog[exId] = {};
+      state.exerciseLog[exId].actualWeight = e.target.value;
+      clearTimeout(window._logTimer);
+      window._logTimer = setTimeout(() => saveDay(currentDate, state), 400);
+    });
+    content.appendChild(logRow);
+  }
+
   row.appendChild(content);
 
-  // SVG diagram preview if available
-  if (item.svg) {
-    const svgWrap = document.createElement('button');
-    svgWrap.className = 'task-svg-btn';
-    svgWrap.setAttribute('aria-label', 'View diagram');
-    svgWrap.innerHTML = item.svg;
-    svgWrap.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openExerciseModal(item);
-    });
-    row.appendChild(svgWrap);
-  }
+  // Swap button (per exercise)
+  const swapBtn = document.createElement('button');
+  swapBtn.className = 'task-action-btn';
+  swapBtn.innerHTML = '⇆';
+  swapBtn.setAttribute('aria-label', 'Swap this exercise');
+  swapBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    openExerciseReplace(exId);
+  });
+  row.appendChild(swapBtn);
 
-  if (item.video) {
+  if (ex.video) {
     const videoBtn = document.createElement('button');
     videoBtn.className = 'task-video-btn';
     videoBtn.innerHTML = '▶';
-    videoBtn.setAttribute('aria-label', 'Watch video');
-    videoBtn.addEventListener('click', (e) => {
+    videoBtn.setAttribute('aria-label', 'Watch demo');
+    videoBtn.addEventListener('click', e => {
       e.stopPropagation();
-      window.open('https://www.youtube.com/results?search_query=' + encodeURIComponent(item.video), '_blank', 'noopener');
+      window.open('https://www.youtube.com/results?search_query=' + encodeURIComponent(ex.video), '_blank', 'noopener');
     });
     row.appendChild(videoBtn);
   }
 
   row.addEventListener('click', () => {
-    state.tasks[item.id] = !state.tasks[item.id];
+    state.tasks[taskId] = !state.tasks[taskId];
     saveDay(currentDate, state);
+    hapticTap();
     render();
   });
   return row;
 }
 
-function openExerciseModal(item) {
-  document.getElementById('exercise-modal-title').textContent = item.title;
-  const body = document.getElementById('exercise-modal-body');
-  body.innerHTML = `
-    <div class="exercise-modal-svg">${item.svg}</div>
-    <p class="exercise-modal-cue">${item.meta}</p>
-    ${item.video ? `<button class="btn btn-primary" onclick="window.open('https://www.youtube.com/results?search_query=${encodeURIComponent(item.video)}','_blank','noopener')">▶ Watch on YouTube</button>` : ''}
-  `;
-  document.getElementById('exercise-modal').classList.remove('hidden');
+function openExerciseReplace(currentExId) {
+  const workoutType = getWorkoutTypeForDate(currentDate);
+  const pool = EXERCISE_POOLS[workoutType] || [];
+  const modal = document.getElementById('exercise-swap-modal');
+  document.getElementById('exercise-swap-title').textContent = `Replace: ${EXERCISES[currentExId]?.name || ''}`;
+  const list = document.getElementById('exercise-swap-list');
+  list.innerHTML = '';
+  pool.forEach(exId => {
+    const ex = EXERCISES[exId];
+    if (!ex) return;
+    const row = document.createElement('div');
+    row.className = 'meal-swap-option' + (exId === currentExId ? ' selected' : '');
+    row.innerHTML = `
+      <div class="meal-swap-header">
+        <span class="meal-swap-name">${ex.name}</span>
+        <span class="meal-swap-kcal">${ex.cat}</span>
+      </div>
+      <div class="meal-swap-detail">${ex.sets > 1 ? ex.sets + ' × ' + ex.reps : ex.reps} ${ex.weight && ex.weight !== 'bodyweight' ? '· ' + ex.weight : ''}</div>
+    `;
+    row.addEventListener('click', () => {
+      const list = getExerciseListForDate(currentDate).slice();
+      const idx = list.indexOf(currentExId);
+      if (idx >= 0) list[idx] = exId;
+      else list.push(exId);
+      setCustomExercisesForDate(currentDate, list);
+      closeExerciseSwap();
+      render();
+      showToast('Exercise swapped');
+    });
+    list.appendChild(row);
+  });
+  modal.classList.remove('hidden');
 }
 
-function closeExerciseModal() {
-  document.getElementById('exercise-modal').classList.add('hidden');
+function openExerciseSwap(workoutType) {
+  const pool = EXERCISE_POOLS[workoutType] || [];
+  const current = new Set(getExerciseListForDate(currentDate));
+  const modal = document.getElementById('exercise-swap-modal');
+  document.getElementById('exercise-swap-title').textContent = `Add exercises to ${workoutType} day`;
+  const list = document.getElementById('exercise-swap-list');
+  list.innerHTML = '<p class="modal-hint">Tap to add or remove from today\'s workout</p>';
+  pool.forEach(exId => {
+    const ex = EXERCISES[exId];
+    if (!ex) return;
+    const inList = current.has(exId);
+    const row = document.createElement('div');
+    row.className = 'meal-swap-option' + (inList ? ' selected' : '');
+    row.innerHTML = `
+      <div class="meal-swap-header">
+        <span class="meal-swap-name">${inList ? '✓ ' : ''}${ex.name}</span>
+        <span class="meal-swap-kcal">${ex.cat}</span>
+      </div>
+      <div class="meal-swap-detail">${ex.sets > 1 ? ex.sets + ' × ' + ex.reps : ex.reps} ${ex.weight && ex.weight !== 'bodyweight' ? '· ' + ex.weight : ''}</div>
+    `;
+    row.addEventListener('click', () => {
+      const newList = getExerciseListForDate(currentDate).slice();
+      if (current.has(exId)) {
+        const idx = newList.indexOf(exId);
+        if (idx >= 0) newList.splice(idx, 1);
+        current.delete(exId);
+      } else {
+        newList.push(exId);
+        current.add(exId);
+      }
+      setCustomExercisesForDate(currentDate, newList);
+      render();
+      openExerciseSwap(workoutType);  // refresh
+    });
+    list.appendChild(row);
+  });
+  modal.classList.remove('hidden');
 }
 
+function closeExerciseSwap() {
+  document.getElementById('exercise-swap-modal').classList.add('hidden');
+}
+
+// ============================================
+// NUTRITION (sub-items + component swap)
+// ============================================
 function renderNutrition() {
   const items = getNutritionPlan(currentDate);
   const list = document.getElementById('nutrition-list');
   list.innerHTML = '';
-  let done = 0, totalKcal = 0, totalP = 0, totalC = 0, totalF = 0;
+  let mealsDone = 0;
+  let totalKcal = 0, totalP = 0, totalC = 0, totalF = 0;
 
-  items.forEach(item => {
-    const isDone = !!state.tasks[item.id];
-    if (isDone) done++;
-    totalKcal += item.meal.kcal;
-    totalP += item.meal.protein || 0;
-    totalC += item.meal.carbs || 0;
-    totalF += item.meal.fat || 0;
+  items.forEach((slotItem, idx) => {
+    const mealCard = document.createElement('div');
+    mealCard.className = 'meal-card';
 
-    const row = document.createElement('div');
-    row.className = 'task-item meal-item' + (isDone ? ' done' : '');
+    // Header (slot, name, cuisine, kcal, swap meal button)
+    const header = document.createElement('div');
+    header.className = 'meal-header';
 
-    const checkbox = document.createElement('div');
-    checkbox.className = 'task-checkbox';
-    row.appendChild(checkbox);
+    const overallTaskId = `${slotItem.id}_full`;
+    const subTasks = slotItem.meal.items.map(it => `${slotItem.id}_${it.id}`);
+    const allDone = subTasks.every(t => state.tasks[t]);
+    const someDone = subTasks.some(t => state.tasks[t]);
+    if (allDone) mealsDone++;
 
-    const content = document.createElement('div');
-    content.className = 'task-content';
+    header.innerHTML = `
+      <div class="meal-header-left">
+        <div class="meal-slot-label">${slotItem.title} <span class="meal-slot-time">· ${slotItem.recommendedTime}</span></div>
+        <div class="meal-name">${slotItem.meal.cuisine} ${slotItem.meal.name}</div>
+        <div class="meal-macros-line"><strong>${slotItem.meal.kcal}</strong> kcal · P${slotItem.meal.protein}g · C${slotItem.meal.carbs}g · F${slotItem.meal.fat}g</div>
+        ${slotItem.gap !== '—' ? `<div class="meal-gap-hint">⏱ ${slotItem.gap}</div>` : ''}
+      </div>
+      <button class="meal-swap-btn-large" aria-label="Swap meal">⇆</button>
+    `;
+    header.querySelector('.meal-swap-btn-large').addEventListener('click', () => openMealSwap(slotItem.slot, slotItem.meal.id));
+    mealCard.appendChild(header);
 
-    const eyebrow = document.createElement('div');
-    eyebrow.className = 'task-title meal-eyebrow';
-    eyebrow.textContent = `${item.title} · ${item.meal.cuisine} · ${item.meal.kcal} kcal`;
-    content.appendChild(eyebrow);
+    // Sub-items
+    slotItem.meal.items.forEach(item => {
+      const display = getItemDisplay(item, currentDate);
+      const subTaskId = `${slotItem.id}_${item.id}`;
+      const isDone = !!state.tasks[subTaskId];
 
-    const name = document.createElement('div');
-    name.className = 'meal-name';
-    name.textContent = item.meal.name;
-    content.appendChild(name);
+      const subRow = document.createElement('div');
+      subRow.className = 'sub-item' + (isDone ? ' done' : '');
+      subRow.innerHTML = `
+        <div class="sub-checkbox"></div>
+        <div class="sub-text">${display.displayText}${display.swapped ? ' <span class="sub-swap-tag">swapped</span>' : ''}</div>
+        ${item.swap ? '<button class="sub-swap-btn" aria-label="Swap component">⇆</button>' : ''}
+      `;
 
-    const detail = document.createElement('div');
-    detail.className = 'task-meta';
-    detail.textContent = item.meal.detail;
-    content.appendChild(detail);
+      if (item.swap) {
+        subRow.querySelector('.sub-swap-btn').addEventListener('click', e => {
+          e.stopPropagation();
+          openComponentSwap(item);
+        });
+      }
 
-    const macros = document.createElement('div');
-    macros.className = 'meal-macros';
-    macros.innerHTML = `<span>P ${item.meal.protein}g</span><span>C ${item.meal.carbs}g</span><span>F ${item.meal.fat}g</span>`;
-    content.appendChild(macros);
+      subRow.addEventListener('click', () => {
+        state.tasks[subTaskId] = !state.tasks[subTaskId];
+        saveDay(currentDate, state);
+        hapticTap();
+        render();
+      });
 
-    row.appendChild(content);
+      mealCard.appendChild(subRow);
 
-    const swapBtn = document.createElement('button');
-    swapBtn.className = 'task-video-btn meal-swap-btn';
-    swapBtn.innerHTML = '⇆';
-    swapBtn.setAttribute('aria-label', 'Swap meal');
-    swapBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openMealSwap(item.slot, item.meal.id);
+      if (state.tasks[subTaskId]) {
+        totalKcal += display.kcal || 0;
+        totalP += display.protein || 0;
+      }
     });
-    row.appendChild(swapBtn);
 
-    row.addEventListener('click', () => {
-      state.tasks[item.id] = !state.tasks[item.id];
-      saveDay(currentDate, state);
-      render();
-    });
-    list.appendChild(row);
+    list.appendChild(mealCard);
   });
 
-  document.getElementById('nutrition-meta').textContent = `${done}/${items.length}`;
-  document.getElementById('macros-footer').innerHTML = `<strong>${totalKcal}</strong> kcal · <strong>${totalP}g</strong> protein · <strong>${totalC}g</strong> carbs · <strong>${totalF}g</strong> fat · Target ${TARGET_CALORIES}/${TARGET_PROTEIN}g`;
+  document.getElementById('nutrition-meta').textContent = `${mealsDone}/${items.length}`;
+  document.getElementById('macros-footer').innerHTML = `Eaten: <strong>${totalKcal}</strong> kcal · <strong>${totalP}g</strong> protein · Target ${TARGET_CALORIES}/${TARGET_PROTEIN}g`;
 }
 
 function openMealSwap(slot, currentMealId) {
-  const options = MEAL_LIBRARY[slot];
+  const options = MEAL_LIBRARY[slot] || [];
   const modal = document.getElementById('meal-swap-modal');
   document.getElementById('meal-swap-title').textContent = `Swap ${slot.charAt(0).toUpperCase() + slot.slice(1)}`;
-  const list = document.getElementById('meal-swap-list');
-  list.innerHTML = '';
-  options.forEach(opt => {
-    const row = document.createElement('div');
-    row.className = 'meal-swap-option' + (opt.id === currentMealId ? ' selected' : '');
-    row.innerHTML = `
-      <div class="meal-swap-header">
-        <span class="meal-swap-name">${opt.cuisine} ${opt.name}</span>
-        <span class="meal-swap-kcal">${opt.kcal} kcal</span>
-      </div>
-      <div class="meal-swap-detail">${opt.detail}</div>
-      <div class="meal-macros"><span>P ${opt.protein}g</span><span>C ${opt.carbs}g</span><span>F ${opt.fat}g</span></div>
-    `;
-    row.addEventListener('click', () => {
-      setMealOverride(slot, currentDate, opt.id);
-      closeMealSwap();
-      render();
-      showToast('Meal swapped');
-    });
-    list.appendChild(row);
+
+  // Cuisine filter
+  const cuisines = [...new Set(options.map(o => o.cuisine))];
+  const filterDiv = document.getElementById('meal-swap-filter');
+  filterDiv.innerHTML = '';
+  const allBtn = document.createElement('button');
+  allBtn.className = 'cuisine-filter-btn active';
+  allBtn.textContent = 'All';
+  allBtn.dataset.cuisine = 'all';
+  filterDiv.appendChild(allBtn);
+  cuisines.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'cuisine-filter-btn';
+    b.textContent = c;
+    b.dataset.cuisine = c;
+    filterDiv.appendChild(b);
   });
+
+  function renderList(filter) {
+    const list = document.getElementById('meal-swap-list');
+    list.innerHTML = '';
+    options.filter(o => filter === 'all' || o.cuisine === filter).forEach(opt => {
+      const row = document.createElement('div');
+      row.className = 'meal-swap-option' + (opt.id === currentMealId ? ' selected' : '');
+      row.innerHTML = `
+        <div class="meal-swap-header">
+          <span class="meal-swap-name">${opt.cuisine} ${opt.name}</span>
+          <span class="meal-swap-kcal">${opt.kcal} kcal</span>
+        </div>
+        <div class="meal-swap-detail">${opt.items.map(i => i.text).join(' · ')}</div>
+        <div class="meal-swap-macros"><span>P ${opt.protein}g</span><span>C ${opt.carbs}g</span><span>F ${opt.fat}g</span></div>
+      `;
+      row.addEventListener('click', () => {
+        setMealOverride(slot, currentDate, opt.id);
+        closeMealSwap();
+        render();
+        showToast('Meal swapped');
+      });
+      list.appendChild(row);
+    });
+  }
+
+  filterDiv.querySelectorAll('.cuisine-filter-btn').forEach(b => {
+    b.addEventListener('click', e => {
+      filterDiv.querySelectorAll('.cuisine-filter-btn').forEach(x => x.classList.remove('active'));
+      e.target.classList.add('active');
+      renderList(b.dataset.cuisine);
+    });
+  });
+
+  renderList('all');
   modal.classList.remove('hidden');
 }
 
@@ -516,13 +770,82 @@ function closeMealSwap() {
   document.getElementById('meal-swap-modal').classList.add('hidden');
 }
 
+function openComponentSwap(item) {
+  const pool = COMPONENT_SWAPS[item.swap];
+  if (!pool) return;
+  const modal = document.getElementById('component-swap-modal');
+  document.getElementById('component-swap-title').textContent = `Swap ${pool.label}`;
+  const list = document.getElementById('component-swap-list');
+  list.innerHTML = '';
+  const currentSwap = getComponentSwap(currentDate, item.id);
+  // Show original first
+  const origRow = document.createElement('div');
+  origRow.className = 'meal-swap-option' + (!currentSwap ? ' selected' : '');
+  origRow.innerHTML = `
+    <div class="meal-swap-header">
+      <span class="meal-swap-name">Original: ${item.text}</span>
+      <span class="meal-swap-kcal">${item.kcal} kcal</span>
+    </div>
+  `;
+  origRow.addEventListener('click', () => {
+    setComponentSwap(currentDate, item.id, null);
+    closeComponentSwap();
+    render();
+    showToast('Reverted to original');
+  });
+  list.appendChild(origRow);
+
+  pool.options.forEach(opt => {
+    if (opt.name === item.text) return;
+    const row = document.createElement('div');
+    row.className = 'meal-swap-option' + (opt.name === currentSwap ? ' selected' : '');
+    row.innerHTML = `
+      <div class="meal-swap-header">
+        <span class="meal-swap-name">${opt.name}</span>
+        <span class="meal-swap-kcal">${opt.kcal} kcal</span>
+      </div>
+      <div class="meal-swap-macros"><span>P ${opt.protein}g</span><span>C ${opt.carbs}g</span><span>F ${opt.fat}g</span></div>
+    `;
+    row.addEventListener('click', () => {
+      setComponentSwap(currentDate, item.id, opt.name);
+      closeComponentSwap();
+      render();
+      showToast('Component swapped');
+    });
+    list.appendChild(row);
+  });
+  modal.classList.remove('hidden');
+}
+
+function closeComponentSwap() {
+  document.getElementById('component-swap-modal').classList.add('hidden');
+}
+
+// ============================================
+// HABITS
+// ============================================
 function renderHabits() {
   const list = document.getElementById('habits-list');
   list.innerHTML = '';
   let done = 0;
   HABITS_PLAN.forEach(item => {
     if (state.tasks[item.id]) done++;
-    const row = createTaskRow(item);
+    const isDone = !!state.tasks[item.id];
+    const row = document.createElement('div');
+    row.className = 'task-item' + (isDone ? ' done' : '');
+    row.innerHTML = `
+      <div class="task-checkbox"></div>
+      <div class="task-content">
+        <div class="task-title">${item.title}</div>
+        <div class="task-meta">${item.meta}</div>
+      </div>
+    `;
+    row.addEventListener('click', () => {
+      state.tasks[item.id] = !state.tasks[item.id];
+      saveDay(currentDate, state);
+      hapticTap();
+      render();
+    });
     list.appendChild(row);
   });
   document.getElementById('habits-meta').textContent = `${done}/${HABITS_PLAN.length}`;
@@ -531,12 +854,6 @@ function renderHabits() {
 // ============================================
 // PROGRESS & STREAK
 // ============================================
-function getAllTasksForDate(d, s) {
-  const workout = getWorkoutForDate(d);
-  const workoutTasks = workout.id === 'class' ? (s.classChoice ? [{id: 'class_attended'}] : []) : getWorkoutTasks(workout);
-  return [...getNutritionPlan(d), ...workoutTasks, ...HABITS_PLAN];
-}
-
 function dayAdherencePct(d, s) {
   if (!s) return 0;
   if (s.dayType === 'festive') {
@@ -545,10 +862,34 @@ function dayAdherencePct(d, s) {
     const weight_logged = s.weight ? 100 : 0;
     return Math.round((water_pct + weight_logged) / 2);
   }
-  const all = getAllTasksForDate(d, s);
-  const total = all.length + WATER_CUPS;
-  const done = all.filter(t => s.tasks && s.tasks[t.id]).length + (s.water || 0);
-  return Math.round((done / total) * 100);
+
+  let total = 0, done = 0;
+  // Nutrition sub-items
+  const plan = getNutritionPlan(d);
+  plan.forEach(slotItem => {
+    slotItem.meal.items.forEach(it => {
+      total++;
+      if (s.tasks?.[`${slotItem.id}_${it.id}`]) done++;
+    });
+  });
+  // Workout
+  const workoutType = getWorkoutTypeForDate(d);
+  if (workoutType === 'class') {
+    if (s.classChoice) { total++; if (s.tasks?.['class_attended']) done++; }
+  } else {
+    const exList = s.customExercises && s.customExercises.length ? s.customExercises : (DEFAULT_WORKOUTS[workoutType] || []);
+    exList.forEach(exId => {
+      total++;
+      if (s.tasks?.[`w_${exId}`]) done++;
+    });
+  }
+  // Habits
+  HABITS_PLAN.forEach(h => { total++; if (s.tasks?.[h.id]) done++; });
+  // Water (count as cups out of 16)
+  total += WATER_CUPS;
+  done += s.water || 0;
+
+  return total > 0 ? Math.round((done / total) * 100) : 0;
 }
 
 function updateProgress() {
@@ -565,7 +906,6 @@ function updateStreak() {
     const d = new Date(today.getTime() - i * 86400000);
     const s = loadDay(d);
     if (!s) break;
-    // streak preserves on festive, class, or any day with activity
     if (s.dayType === 'festive' || s.dayType === 'class') {
       if ((s.water || 0) >= 4) { streak++; continue; }
       break;
@@ -582,39 +922,44 @@ function updateStreak() {
 // DASHBOARD
 // ============================================
 function renderDashboard() {
-  // Phase card
   const phase = getCurrentPhase(currentDate);
   const dayNum = dayNumber(currentDate);
-  document.getElementById('dash-phase-name').textContent = `${phase.name} ${phase.icon}`;
-  document.getElementById('dash-phase-day').textContent = `Day ${dayNum}/87`;
-  const phaseStart = phase.dayStart;
-  const phaseEnd = phase.dayEnd;
-  const phasePct = Math.min(100, Math.max(0, ((dayNum - phaseStart) / (phaseEnd - phaseStart + 1)) * 100));
-  document.getElementById('phase-progress-fill').style.width = phasePct + '%';
-  const daysToTarget = daysUntil(TARGET_DATE);
-  document.getElementById('dash-phase-meta').textContent = daysToTarget > 0 ? `${daysToTarget} days to Aug 20` : `Past target date`;
+  const phaseEl = document.getElementById('dash-phase-name');
+  if (phaseEl) phaseEl.textContent = `${phase.name} ${phase.icon}`;
+  const phaseDayEl = document.getElementById('dash-phase-day');
+  if (phaseDayEl) phaseDayEl.textContent = `Day ${dayNum}/87`;
+  const phaseFill = document.getElementById('phase-progress-fill');
+  if (phaseFill) {
+    const pct = Math.min(100, Math.max(0, ((dayNum - phase.dayStart) / (phase.dayEnd - phase.dayStart + 1)) * 100));
+    phaseFill.style.width = pct + '%';
+  }
+  const phaseMeta = document.getElementById('dash-phase-meta');
+  if (phaseMeta) {
+    const dt = daysUntil(TARGET_DATE);
+    phaseMeta.textContent = dt > 0 ? `${dt} days to Aug 20` : 'Past target date';
+  }
 
-  // Weight
   const latestWeight = getLatestWeight();
-  document.getElementById('dash-weight').textContent = latestWeight ? `${latestWeight.toFixed(1)} kg` : '—';
+  const dwEl = document.getElementById('dash-weight');
+  if (dwEl) dwEl.textContent = latestWeight ? `${latestWeight.toFixed(1)} kg` : '—';
   if (latestWeight) {
     const delta = latestWeight - START_WEIGHT;
     const trend = delta < 0 ? `${delta.toFixed(1)} kg` : `+${delta.toFixed(1)} kg`;
     const trendEl = document.getElementById('dash-weight-trend');
-    trendEl.textContent = trend;
-    trendEl.className = 'dash-trend ' + (delta < 0 ? 'trend-good' : delta > 0 ? 'trend-bad' : '');
+    if (trendEl) {
+      trendEl.textContent = trend;
+      trendEl.className = 'dash-trend ' + (delta < 0 ? 'trend-good' : delta > 0 ? 'trend-bad' : '');
+    }
   }
-  document.getElementById('dash-togo').textContent = latestWeight ? `${(latestWeight - TARGET_WEIGHT).toFixed(1)} kg` : '—';
+  const togoEl = document.getElementById('dash-togo');
+  if (togoEl) togoEl.textContent = latestWeight ? `${(latestWeight - TARGET_WEIGHT).toFixed(1)} kg` : '—';
 
-  // 7-day adherence avg
-  document.getElementById('dash-adherence').textContent = `${calculate7DayAdherence()}%`;
+  const adhEl = document.getElementById('dash-adherence');
+  if (adhEl) adhEl.textContent = `${calculate7DayAdherence()}%`;
 
-  // Charts
   drawWeightChart();
   drawAdherenceBars();
   drawSleepChart();
-
-  // Checkpoint
   renderCheckpoint();
 }
 
@@ -636,10 +981,7 @@ function calculate7DayAdherence() {
   for (let i = 0; i < 7; i++) {
     const d = new Date(today.getTime() - i * 86400000);
     const s = loadDay(d);
-    if (s) {
-      sum += dayAdherencePct(d, s);
-      count++;
-    }
+    if (s) { sum += dayAdherencePct(d, s); count++; }
   }
   return count ? Math.round(sum / count) : 0;
 }
@@ -652,8 +994,7 @@ function drawWeightChart() {
   const h = canvas.height = 360;
   ctx.clearRect(0, 0, w, h);
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
   const points = [];
   for (let i = 27; i >= 0; i--) {
     const d = new Date(today.getTime() - i * 86400000);
@@ -671,8 +1012,9 @@ function drawWeightChart() {
     ctx.fillStyle = tert;
     ctx.font = '24px -apple-system, system-ui';
     ctx.textAlign = 'center';
-    ctx.fillText('Log weight on 2+ days to see chart', w / 2, h / 2);
-    document.getElementById('weight-summary').textContent = '';
+    ctx.fillText('Log weight on 2+ days to see trend', w / 2, h / 2);
+    const sumEl = document.getElementById('weight-summary');
+    if (sumEl) sumEl.textContent = '';
     return;
   }
 
@@ -698,7 +1040,6 @@ function drawWeightChart() {
     ctx.fillText(val, padding - 10, y + 7);
   }
 
-  // Target line
   const targetY = padding + chartH - ((TARGET_WEIGHT - minW) / (maxW - minW)) * chartH;
   ctx.strokeStyle = success;
   ctx.setLineDash([5, 5]);
@@ -713,7 +1054,6 @@ function drawWeightChart() {
   ctx.textAlign = 'left';
   ctx.fillText('Target 70kg', padding + 4, targetY - 6);
 
-  // Plot line
   ctx.strokeStyle = accent;
   ctx.lineWidth = 3;
   ctx.beginPath();
@@ -724,7 +1064,6 @@ function drawWeightChart() {
   });
   ctx.stroke();
 
-  // Dots
   points.forEach((p, i) => {
     const x = padding + (i / (points.length - 1)) * chartW;
     const y = padding + chartH - ((p.weight - minW) / (maxW - minW)) * chartH;
@@ -738,16 +1077,15 @@ function drawWeightChart() {
   const first = points[0].weight;
   const diff = latest - first;
   const sign = diff > 0 ? '+' : '';
-  document.getElementById('weight-summary').textContent =
-    `Latest ${latest.toFixed(1)} kg · Δ ${sign}${diff.toFixed(1)} kg in ${points.length} days · ${(latest - TARGET_WEIGHT).toFixed(1)} kg to go`;
+  const sumEl = document.getElementById('weight-summary');
+  if (sumEl) sumEl.textContent = `Latest ${latest.toFixed(1)} kg · Δ ${sign}${diff.toFixed(1)} kg in ${points.length} days · ${(latest - TARGET_WEIGHT).toFixed(1)} kg to go`;
 }
 
 function drawAdherenceBars() {
   const container = document.getElementById('adherence-bars');
   if (!container) return;
   container.innerHTML = '';
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
   let any = false;
   for (let i = 13; i >= 0; i--) {
     const d = new Date(today.getTime() - i * 86400000);
@@ -775,8 +1113,7 @@ function drawSleepChart() {
   const h = canvas.height = 280;
   ctx.clearRect(0, 0, w, h);
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
   const points = [];
   for (let i = 13; i >= 0; i--) {
     const d = new Date(today.getTime() - i * 86400000);
@@ -795,7 +1132,6 @@ function drawSleepChart() {
   const chartH = h - padding * 2;
   const maxSleep = 12;
 
-  // Grid
   ctx.strokeStyle = grid;
   ctx.lineWidth = 1;
   for (let i = 0; i <= 4; i++) {
@@ -812,7 +1148,6 @@ function drawSleepChart() {
   ctx.fillText('6h', padding - 8, padding + chartH / 2 + 6);
   ctx.fillText('0h', padding - 8, padding + chartH + 6);
 
-  // Sleep bars
   const barW = chartW / points.length * 0.7;
   points.forEach((p, i) => {
     const x = padding + (i + 0.5) * (chartW / points.length) - barW / 2;
@@ -823,7 +1158,6 @@ function drawSleepChart() {
     }
   });
 
-  // Sciatica overlay line
   ctx.strokeStyle = danger;
   ctx.lineWidth = 3;
   ctx.beginPath();
@@ -845,7 +1179,6 @@ function drawSleepChart() {
     ctx.fill();
   });
 
-  // Legend
   ctx.fillStyle = accent;
   ctx.fillRect(padding, 12, 14, 14);
   ctx.fillStyle = tert;
@@ -855,7 +1188,7 @@ function drawSleepChart() {
   ctx.fillStyle = danger;
   ctx.fillRect(padding + 180, 12, 14, 14);
   ctx.fillStyle = tert;
-  ctx.fillText('Sciatica (0-10)', padding + 202, 25);
+  ctx.fillText('Discomfort (0-10)', padding + 202, 25);
 }
 
 function renderCheckpoint() {
@@ -874,9 +1207,9 @@ function renderCheckpoint() {
 // MEALS TAB
 // ============================================
 function renderMealsTab() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
   const list = document.getElementById('week-meals-list');
+  if (!list) return;
   list.innerHTML = '';
   for (let i = 0; i < 7; i++) {
     const d = new Date(today.getTime() + i * 86400000);
@@ -909,21 +1242,20 @@ function openHelperView(date) {
   const content = document.getElementById('helper-content');
   let html = `<div class="helper-intro"><p>Meals to prepare for ${formatDate(d)}. Pack lunch in container for office.</p></div>`;
   plan.forEach(item => {
-    if (!item.meal.helper || item.meal.helper === 'No prep.') return; // skip no-prep items
+    if (!item.meal.helper || item.meal.helper === 'No prep.') return;
     html += `
       <div class="helper-meal">
         <h4>${item.title}: ${item.meal.name} ${item.meal.cuisine}</h4>
-        <p class="helper-ingredients"><strong>What's in it:</strong> ${item.meal.detail}</p>
+        <p class="helper-ingredients"><strong>What's in it:</strong> ${item.meal.items.map(i => i.text).join(' · ')}</p>
         <p class="helper-instructions"><strong>How to cook:</strong> ${item.meal.helper}</p>
-        ${item.meal.video ? `<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(item.meal.name + ' recipe')}" target="_blank" class="link-btn">🎥 Recipe video</a>` : ''}
+        <a href="https://www.youtube.com/results?search_query=${encodeURIComponent(item.meal.name + ' recipe')}" target="_blank" class="link-btn">🎥 Recipe video</a>
       </div>
     `;
   });
-  // Also include no-prep items as a quick list
   const noprep = plan.filter(p => p.meal.helper === 'No prep.');
   if (noprep.length) {
     html += `<div class="helper-meal"><h4>No-prep items (assemble fresh):</h4><ul>`;
-    noprep.forEach(p => html += `<li><strong>${p.title}:</strong> ${p.meal.detail}</li>`);
+    noprep.forEach(p => html += `<li><strong>${p.title}:</strong> ${p.meal.items.map(i => i.text).join(' · ')}</li>`);
     html += `</ul></div>`;
   }
   content.innerHTML = html;
@@ -954,74 +1286,56 @@ function printHelper() {
 function shareHelper() {
   const content = document.getElementById('helper-content').innerText;
   const title = document.getElementById('helper-modal-title').textContent;
-  if (navigator.share) {
-    navigator.share({ title: title, text: content }).catch(() => {});
-  } else {
-    copyToClipboard(`${title}\n\n${content}`);
-  }
+  if (navigator.share) navigator.share({ title, text: content }).catch(() => {});
+  else copyToClipboard(`${title}\n\n${content}`);
 }
 
 // ============================================
 // GROCERY LIST
 // ============================================
 function openGrocery() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  // Aggregate ingredients across 7 days
-  const ingredients = {};
-  const addIng = (name, qty) => {
-    ingredients[name] = (ingredients[name] || 0) + qty;
-  };
-  // Simple heuristic — count occurrence of meals
-  const mealCounts = {};
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(today.getTime() + i * 86400000);
-    const plan = getNutritionPlan(d);
-    plan.forEach(p => {
-      mealCounts[p.meal.id] = (mealCounts[p.meal.id] || 0) + 1;
-    });
-  }
-
-  // Static grocery list (curated by category) - more reliable than NLP on meal text
   const groceryList = {
     'Proteins': [
       'Chicken breast (boneless) — 1.2 kg',
       'Fish fillets (salmon/hammour) — 600g',
-      'White fish for soup — 200g',
+      'White fish — 300g',
       'Lean beef strips — 200g',
       'Eggs — 1 dozen',
       'Paneer — 200g',
       'Whey protein isolate (if not on hand)',
       'Cottage cheese — 250g',
-      'Tuna in water — 2 small cans'
+      'Tuna in water — 2 small cans',
+      'Tofu — 200g (optional)'
     ],
     'Grains & Carbs': [
-      'Brown rice — 500g (lasts 2 weeks)',
+      'Brown rice — 500g',
       'Quinoa — 250g',
       'Rolled oats — 500g',
       'Multigrain rotis — 1 pack',
       'Sweet potato — 2 medium',
       'Masoor daal — 500g',
-      'Chickpeas (dried or canned) — 500g + 1 can'
+      'Chickpeas (dried or canned) — 500g + 1 can',
+      'Whole grain rice cakes — 1 pack',
+      'Farro — 250g (optional)'
     ],
     'Vegetables': [
       'Cucumbers — 6-8',
       'Tomatoes — 8-10',
       'Onions (mix) — 1 kg',
-      'Bell peppers (red, green, yellow) — 5-6',
+      'Bell peppers — 5-6',
       'Zucchini — 3',
+      'Eggplant — 2',
       'Broccoli — 2 heads',
       'Bok choy or Asian greens — 1 bunch',
       'Carrots — 5-6',
       'Spinach — 2 bunches',
-      'Cauliflower — 1 head (for cauli rice)',
+      'Cauliflower — 1 head',
       'Mixed salad leaves — 1 large bag',
       'Garlic — 1 head',
       'Ginger — 100g',
       'Lemons — 6-8',
       'Green chilies — small pack',
-      'Coriander, mint — bunches',
-      'Eggplant — 2 medium'
+      'Coriander, mint, basil — bunches'
     ],
     'Fats & Pantry': [
       'Extra virgin olive oil — 500ml',
@@ -1031,31 +1345,34 @@ function openGrocery() {
       'Tahini — small jar',
       'Soy sauce (low sodium)',
       'Cumin, turmeric, coriander, garam masala',
-      'Tandoori marinade paste'
+      'Tandoori marinade paste',
+      'Green curry paste',
+      'Sesame oil (small bottle)',
+      'Olives — small jar'
     ],
     'Dairy': [
       'Greek yogurt — 1 kg tub',
       'Labneh — small tub',
       'Hummus — 250g',
-      'Feta (optional) — 100g'
+      'Feta (optional) — 100g',
+      'Fresh mozzarella — 200g (optional)'
     ],
     'Fruits': [
       'Bananas — 7',
       'Apples — 6',
-      'Pears — 3-4',
+      'Pears — 3',
       'Berries — 1 box',
       'Medjool dates — small box'
     ],
     'Drinks/Misc': [
       'Coffee beans/ground — 250g',
       'Green tea — 1 box',
-      'Chamomile or peppermint tea (caffeine taper)',
-      'Olives — small jar',
-      'Rice cakes (whole grain) — 1 pack'
+      'Chamomile or peppermint tea',
+      'Honey (raw)'
     ]
   };
 
-  let html = `<div class="grocery-intro"><p>One week's groceries (Tue–Mon). Big shop Sat/Sun, top-up Wed.</p></div>`;
+  let html = `<div class="grocery-intro"><p>One week's groceries. Big shop Sat/Sun, top-up Wed.</p></div>`;
   for (const cat in groceryList) {
     html += `<div class="grocery-category"><h4>${cat}</h4><ul>`;
     groceryList[cat].forEach(item => html += `<li>${item}</li>`);
@@ -1079,39 +1396,40 @@ function copyGrocery() {
 // PLAN TAB
 // ============================================
 function renderPlanTab() {
-  // Goal progress
   const start = new Date(START_DATE);
   const target = new Date(TARGET_DATE);
   const total = Math.round((target - start) / 86400000);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
   const elapsed = Math.round((today - start) / 86400000);
   const remaining = total - elapsed;
-  document.getElementById('goal-progress').innerHTML = `<strong>${remaining} days remaining</strong> · Day ${elapsed + 1} of ${total + 1}`;
+  const goalEl = document.getElementById('goal-progress');
+  if (goalEl) goalEl.innerHTML = `<strong>${remaining} days remaining</strong> · Day ${elapsed + 1} of ${total + 1}`;
 
-  // Weekly schedule
   const sched = document.getElementById('weekly-schedule-list');
-  sched.innerHTML = '';
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  DEFAULT_WEEKLY_SCHEDULE.forEach((wkId, idx) => {
-    const wk = WORKOUT_SPLITS[wkId];
-    const row = document.createElement('div');
-    row.className = 'sched-row';
-    row.innerHTML = `<div class="sched-day">${dayNames[idx]}</div><div class="sched-workout">${wk.icon} ${wk.name}</div><div class="sched-focus">${wk.focus || ''}</div>`;
-    sched.appendChild(row);
-  });
+  if (sched) {
+    sched.innerHTML = '';
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    DEFAULT_WEEKLY_SCHEDULE.forEach((wkId, idx) => {
+      const wk = WORKOUT_SPLITS[wkId];
+      const row = document.createElement('div');
+      row.className = 'sched-row';
+      row.innerHTML = `<div class="sched-day">${dayNames[idx]}</div><div class="sched-workout">${wk.icon} ${wk.name}</div><div class="sched-focus">${wk.focus || ''}</div>`;
+      sched.appendChild(row);
+    });
+  }
 
-  // Checkpoints
   const cp = document.getElementById('all-checkpoints');
-  cp.innerHTML = '';
-  CHECKPOINTS.forEach(c => {
-    const diff = daysUntil(c.date);
-    const status = diff > 0 ? `${diff} days away` : diff === 0 ? 'TODAY' : `${Math.abs(diff)} days ago`;
-    const item = document.createElement('div');
-    item.className = 'cp-item';
-    item.innerHTML = `<div class="cp-header"><strong>${c.title}</strong><span>${status}</span></div><div class="cp-date">${c.date}</div><ul>${c.tasks.map(t => `<li>${t}</li>`).join('')}</ul>`;
-    cp.appendChild(item);
-  });
+  if (cp) {
+    cp.innerHTML = '';
+    CHECKPOINTS.forEach(c => {
+      const diff = daysUntil(c.date);
+      const status = diff > 0 ? `${diff} days away` : diff === 0 ? 'TODAY' : `${Math.abs(diff)} days ago`;
+      const item = document.createElement('div');
+      item.className = 'cp-item';
+      item.innerHTML = `<div class="cp-header"><strong>${c.title}</strong><span>${status}</span></div><div class="cp-date">${c.date}</div><ul>${c.tasks.map(t => `<li>${t}</li>`).join('')}</ul>`;
+      cp.appendChild(item);
+    });
+  }
 }
 
 // ============================================
@@ -1119,60 +1437,84 @@ function renderPlanTab() {
 // ============================================
 function generateDailySummary() {
   const dayNum = dayNumber(currentDate);
-  const phase = getCurrentPhase(currentDate);
-  const workout = getWorkoutForDate(currentDate);
+  const workoutType = getWorkoutTypeForDate(currentDate);
+  const split = WORKOUT_SPLITS[workoutType];
   const plan = getNutritionPlan(currentDate);
 
-  const nutDone = plan.filter(p => state.tasks[p.id]);
-  const nutMissed = plan.filter(p => !state.tasks[p.id]);
+  let mealsDone = [], mealsMissed = [];
+  let totalKcal = 0, totalP = 0;
+  plan.forEach(slotItem => {
+    const allItemsDone = slotItem.meal.items.every(it => state.tasks[`${slotItem.id}_${it.id}`]);
+    const someItemsDone = slotItem.meal.items.some(it => state.tasks[`${slotItem.id}_${it.id}`]);
+    if (allItemsDone) {
+      mealsDone.push(`${slotItem.title} (${slotItem.meal.name})`);
+      totalKcal += slotItem.meal.kcal;
+      totalP += slotItem.meal.protein;
+    } else if (someItemsDone) {
+      const partialItems = slotItem.meal.items.filter(it => state.tasks[`${slotItem.id}_${it.id}`]).map(it => {
+        const d = getItemDisplay(it, currentDate);
+        return d.displayText;
+      });
+      mealsDone.push(`${slotItem.title} (partial: ${partialItems.join(', ')})`);
+      partialItems.forEach(p => {
+        const it = slotItem.meal.items.find(i => i.text === p);
+        if (it) { totalKcal += it.kcal || 0; totalP += it.protein || 0; }
+      });
+    } else {
+      mealsMissed.push(slotItem.title);
+    }
+  });
 
-  const workoutTasks = workout.id === 'class' ? (state.classChoice ? [{id: 'class_attended', title: `Class: ${state.classChoice}`}] : []) : getWorkoutTasks(workout);
-  const wDone = workoutTasks.filter(t => state.tasks[t.id]);
-  const wMissed = workoutTasks.filter(t => !state.tasks[t.id]);
-  const habDone = HABITS_PLAN.filter(t => state.tasks[t.id]);
-  const habMissed = HABITS_PLAN.filter(t => !state.tasks[t.id]);
+  let workoutDoneList = [], workoutMissedList = [];
+  if (workoutType === 'class') {
+    if (state.classChoice) {
+      const cn = state.classChoice === 'Other (type in)' ? (state.classCustom || 'Custom class') : state.classChoice;
+      if (state.tasks['class_attended']) workoutDoneList.push(cn);
+      else workoutMissedList.push(cn);
+    }
+  } else {
+    const exList = state.customExercises && state.customExercises.length ? state.customExercises : (DEFAULT_WORKOUTS[workoutType] || []);
+    exList.forEach(exId => {
+      const ex = EXERCISES[exId];
+      if (!ex) return;
+      const actual = state.exerciseLog?.[exId]?.actualWeight;
+      const label = ex.name + (actual ? ` (lifted ${actual})` : '');
+      if (state.tasks[`w_${exId}`]) workoutDoneList.push(label);
+      else workoutMissedList.push(ex.name);
+    });
+  }
+
+  const habsDone = HABITS_PLAN.filter(h => state.tasks[h.id]);
+  const habsMissed = HABITS_PLAN.filter(h => !state.tasks[h.id]);
 
   const liters = (state.water * 0.25).toFixed(2).replace(/\.?0+$/, '');
   const dayTypeLabel = state.dayType === 'normal' ? '' : ` [${state.dayType.toUpperCase()} day]`;
 
   let s = `Day ${dayNum} log (${formatDate(currentDate)})${dayTypeLabel}:\n\n`;
-  s += `STATS\n`;
-  s += `- Weight: ${state.weight ? state.weight + ' kg' : 'not logged'}\n`;
-  s += `- Sleep: ${state.sleep ? state.sleep + ' hrs' : 'not logged'}\n`;
-  s += `- Energy: ${state.energy}/10\n- Mood: ${state.mood}/10\n- Sciatica: ${state.sciatica}/10\n`;
+  s += `STATS\n- Weight: ${state.weight ? state.weight + ' kg' : 'not logged'}\n- Sleep: ${state.sleep ? state.sleep + ' hrs' : 'not logged'}\n- Energy: ${state.energy}/10\n- Mood: ${state.mood}/10\n- Discomfort/sciatica: ${state.sciatica}/10\n`;
   if (state.caffeine !== null && state.caffeine !== '') s += `- Caffeine: ${state.caffeine} cups\n`;
   s += `\nWATER: ${liters}L / ${TARGET_WATER_L}L\n\n`;
-
-  s += `NUTRITION (${nutDone.length}/${plan.length})\n`;
-  s += `- Eaten: ${nutDone.map(t => `${t.title} (${t.meal.name})`).join(', ') || 'none'}\n`;
-  if (nutMissed.length) s += `- Missed: ${nutMissed.map(t => t.title).join(', ')}\n`;
-
-  const totalKcal = nutDone.reduce((sum, t) => sum + t.meal.kcal, 0);
-  const totalP = nutDone.reduce((sum, t) => sum + (t.meal.protein || 0), 0);
+  s += `NUTRITION (${mealsDone.length}/${plan.length} meals fully done)\n`;
+  if (mealsDone.length) s += `- Eaten: ${mealsDone.join(', ')}\n`;
+  if (mealsMissed.length) s += `- Missed: ${mealsMissed.join(', ')}\n`;
   s += `- Approx eaten: ${totalKcal} kcal / ${totalP}g protein\n\n`;
 
-  s += `WORKOUT (${wDone.length}/${workoutTasks.length}) · ${workout.icon} ${workout.name}\n`;
-  if (workoutTasks.length === 0) {
-    s += `- No workout (rest/festive day)\n`;
-  } else if (wDone.length === workoutTasks.length) {
-    s += `- Full session completed\n`;
-  } else if (wDone.length === 0) {
-    s += `- Did not work out\n`;
-  } else {
-    s += `- Partial — did ${wDone.length} of ${workoutTasks.length}\n`;
-    if (wMissed.length) s += `- Skipped: ${wMissed.map(t => t.title).join(', ')}\n`;
-  }
-  s += `\nHABITS (${habDone.length}/${HABITS_PLAN.length})\n`;
-  if (habMissed.length) s += `- Missed: ${habMissed.map(t => t.title).join(', ')}\n`;
+  s += `WORKOUT (${workoutDoneList.length}/${workoutDoneList.length + workoutMissedList.length}) · ${split.icon} ${split.name}\n`;
+  if (workoutDoneList.length === 0 && workoutMissedList.length === 0) s += `- No workout (rest/festive day)\n`;
+  else if (workoutMissedList.length === 0) s += `- Full session completed\n  Exercises: ${workoutDoneList.join(', ')}\n`;
+  else if (workoutDoneList.length === 0) s += `- Did not work out\n`;
+  else s += `- Partial — did ${workoutDoneList.length} of ${workoutDoneList.length + workoutMissedList.length}\n  Done: ${workoutDoneList.join(', ')}\n  Skipped: ${workoutMissedList.join(', ')}\n`;
+
+  s += `\nHABITS (${habsDone.length}/${HABITS_PLAN.length})\n`;
+  if (habsMissed.length) s += `- Missed: ${habsMissed.map(h => h.title).join(', ')}\n`;
   if (state.notes) s += `\nNOTES\n${state.notes}\n`;
-  if (state.symptoms) s += `\nSYMPTOMS\n${state.symptoms}\n`;
+  if (state.symptoms) s += `\nSYMPTOMS / FLAGS\n${state.symptoms}\n`;
   s += `\nPlease give me my daily summary (wins, struggles, patterns) and tomorrow's specific plan.`;
   return s;
 }
 
 function generateWeeklySummary() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
   const days = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(today.getTime() - i * 86400000);
@@ -1190,13 +1532,9 @@ function generateWeeklySummary() {
   const avg = arr => arr.length ? (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(1) : '—';
 
   let s = `Weekly review — last ${days.length} days:\n\n`;
-  if (weights.length >= 2) {
-    s += `WEIGHT: ${weights[0]} → ${weights[weights.length - 1]} kg (Δ ${(weights[weights.length - 1] - weights[0]).toFixed(1)} kg)\n\n`;
-  } else if (weights.length === 1) {
-    s += `WEIGHT: ${weights[0]} kg (only 1 day logged)\n\n`;
-  }
-  s += `AVERAGES\n`;
-  s += `- Sleep: ${avg(sleeps)} hrs\n- Energy: ${avg(energies)}/10\n- Mood: ${avg(moods)}/10\n- Sciatica: ${avg(sciaticas)}/10\n- Water: ${avg(waters)}L/day\n\n`;
+  if (weights.length >= 2) s += `WEIGHT: ${weights[0]} → ${weights[weights.length - 1]} kg (Δ ${(weights[weights.length - 1] - weights[0]).toFixed(1)} kg)\n\n`;
+  else if (weights.length === 1) s += `WEIGHT: ${weights[0]} kg (only 1 day logged)\n\n`;
+  s += `AVERAGES\n- Sleep: ${avg(sleeps)} hrs\n- Energy: ${avg(energies)}/10\n- Mood: ${avg(moods)}/10\n- Discomfort: ${avg(sciaticas)}/10\n- Water: ${avg(waters)}L/day\n\n`;
   s += `DAILY ADHERENCE\n`;
   days.forEach(d => {
     const pct = dayAdherencePct(d.date, d.state);
@@ -1205,7 +1543,7 @@ function generateWeeklySummary() {
   const notes = days.filter(d => d.state.notes).map(d => `${formatDate(d.date)}: ${d.state.notes}`);
   if (notes.length) s += `\nNOTES\n${notes.join('\n')}\n`;
   const sympts = days.filter(d => d.state.symptoms).map(d => `${formatDate(d.date)}: ${d.state.symptoms}`);
-  if (sympts.length) s += `\nSYMPTOMS\n${sympts.join('\n')}\n`;
+  if (sympts.length) s += `\nFLAGS/SYMPTOMS\n${sympts.join('\n')}\n`;
   s += `\nPlease give me my weekly deep-dive: trends, what's working, what's not, adjustments for next week, am I on track for Aug 20.`;
   return s;
 }
@@ -1236,6 +1574,11 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
+function hapticTap() {
+  // Subtle haptic on supported devices
+  if (navigator.vibrate) navigator.vibrate(10);
+}
+
 function switchTab(tab) {
   document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -1247,35 +1590,27 @@ function switchTab(tab) {
   window.scrollTo(0, 0);
 }
 
-// ============================================
-// WHY / THEME
-// ============================================
+// Why
 function openWhy() {
   document.getElementById('why-input').value = localStorage.getItem('fit:why') || '';
   document.getElementById('why-modal').classList.remove('hidden');
 }
-
-function closeWhy() {
-  document.getElementById('why-modal').classList.add('hidden');
-}
-
+function closeWhy() { document.getElementById('why-modal').classList.add('hidden'); }
 function saveWhy() {
-  const val = document.getElementById('why-input').value.trim();
-  if (val) localStorage.setItem('fit:why', val);
-  else localStorage.removeItem('fit:why');
+  const v = document.getElementById('why-input').value.trim();
+  if (v) localStorage.setItem('fit:why', v); else localStorage.removeItem('fit:why');
   closeWhy();
   render();
 }
 
+// Theme
 function toggleTheme() {
-  const current = document.documentElement.getAttribute('data-theme') || 'dark';
-  const next = current === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', next);
-  localStorage.setItem('fit:theme', next);
-  // Re-draw charts with new colors
+  const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+  const nxt = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', nxt);
+  localStorage.setItem('fit:theme', nxt);
   setTimeout(() => renderDashboard(), 50);
 }
-
 function applyStoredTheme() {
   const saved = localStorage.getItem('fit:theme') || 'dark';
   document.documentElement.setAttribute('data-theme', saved);
@@ -1294,7 +1629,6 @@ function initApp() {
 }
 
 function bindAppEvents() {
-  // Navigation
   document.getElementById('prev-day-btn').addEventListener('click', () => {
     currentDate = new Date(currentDate.getTime() - 86400000);
     state = loadDay(currentDate) || getDefaultState();
@@ -1307,12 +1641,10 @@ function bindAppEvents() {
   });
   document.getElementById('theme-btn').addEventListener('click', toggleTheme);
 
-  // Tabs
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
   });
 
-  // Day type
   document.querySelectorAll('.daytype-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       state.dayType = btn.dataset.type;
@@ -1322,7 +1654,6 @@ function bindAppEvents() {
     });
   });
 
-  // Inputs
   document.getElementById('weight-input').addEventListener('input', e => {
     state.weight = parseFloat(e.target.value) || null;
     saveDay(currentDate, state);
@@ -1338,7 +1669,6 @@ function bindAppEvents() {
     saveDay(currentDate, state);
   });
 
-  // Sliders
   document.getElementById('energy-slider').addEventListener('input', e => {
     state.energy = parseInt(e.target.value);
     document.getElementById('energy-value').textContent = state.energy;
@@ -1357,7 +1687,6 @@ function bindAppEvents() {
     saveDay(currentDate, state);
   });
 
-  // Notes
   document.getElementById('notes-input').addEventListener('input', e => {
     state.notes = e.target.value;
     clearTimeout(window._notesTimer);
@@ -1369,33 +1698,19 @@ function bindAppEvents() {
     window._symTimer = setTimeout(() => saveDay(currentDate, state), 400);
   });
 
-  // Change workout button
-  document.getElementById('change-workout-btn').addEventListener('click', () => {
-    const modal = document.getElementById('workout-swap-modal');
-    const list = document.getElementById('workout-swap-list');
-    list.innerHTML = '';
-    Object.values(WORKOUT_SPLITS).forEach(wk => {
-      const btn = document.createElement('div');
-      btn.className = 'meal-swap-option';
-      btn.innerHTML = `<div class="meal-swap-header"><span class="meal-swap-name">${wk.icon} ${wk.name}</span></div><div class="meal-swap-detail">${wk.focus || ''}</div>`;
-      btn.addEventListener('click', () => {
-        state.workoutOverride = wk.id;
-        if (wk.id !== 'class') state.classChoice = null;
-        saveDay(currentDate, state);
-        closeWorkoutSwap();
-        render();
-        showToast('Workout changed');
-      });
-      list.appendChild(btn);
+  // Class custom input
+  const classInput = document.getElementById('class-custom-input');
+  if (classInput) {
+    classInput.addEventListener('input', e => {
+      state.classCustom = e.target.value;
+      clearTimeout(window._classTimer);
+      window._classTimer = setTimeout(() => saveDay(currentDate, state), 400);
     });
-    modal.classList.remove('hidden');
-  });
+  }
 
-  // Copy buttons
   document.getElementById('copy-summary-btn').addEventListener('click', () => copyToClipboard(generateDailySummary()));
   document.getElementById('weekly-summary-btn').addEventListener('click', () => copyToClipboard(generateWeeklySummary()));
 
-  // Reset
   document.getElementById('reset-day-btn').addEventListener('click', () => {
     if (confirm('Reset all data for this day?')) {
       state = getDefaultState();
@@ -1404,59 +1719,53 @@ function bindAppEvents() {
     }
   });
 
-  // Export
-  document.getElementById('export-btn').addEventListener('click', () => {
-    const data = {};
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i);
-      if (k && (k.startsWith('fit:') || k.startsWith('meal-override:'))) {
-        try { data[k] = JSON.parse(localStorage.getItem(k)); }
-        catch { data[k] = localStorage.getItem(k); }
-      }
-    }
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `fitness-tracker-${dateKey(new Date())}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    showToast('Data exported');
-  });
+  document.getElementById('export-btn').addEventListener('click', exportAllData);
+  const backupBtn = document.getElementById('backup-btn');
+  if (backupBtn) backupBtn.addEventListener('click', exportAllData);
 
-  // Helper buttons
   document.getElementById('helper-view-btn').addEventListener('click', () => openHelperView(currentDate));
   document.getElementById('full-helper-btn').addEventListener('click', () => openHelperView(currentDate));
   document.getElementById('grocery-list-btn').addEventListener('click', openGrocery);
 
-  // Why
   document.getElementById('why-card').addEventListener('click', openWhy);
 }
 
-function closeWorkoutSwap() {
-  document.getElementById('workout-swap-modal').classList.add('hidden');
+function exportAllData() {
+  const data = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k && (k.startsWith('fit:') || k.startsWith('meal-override:') || k.startsWith('comp-swap:') || k.startsWith('fit-backup:'))) {
+      try { data[k] = JSON.parse(localStorage.getItem(k)); }
+      catch { data[k] = localStorage.getItem(k); }
+    }
+  }
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `fit-tracker-backup-${dateKey(new Date())}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Backup downloaded');
 }
 
-// Expose modal closers for inline onclick
+// Expose closers for inline onclick
 window.closeMealSwap = closeMealSwap;
-window.closeWorkoutSwap = closeWorkoutSwap;
+window.closeComponentSwap = closeComponentSwap;
+window.closeExerciseSwap = closeExerciseSwap;
 window.closeHelper = closeHelper;
 window.closeGrocery = closeGrocery;
 window.closeWhy = closeWhy;
-window.closeExerciseModal = closeExerciseModal;
 window.printHelper = printHelper;
 window.shareHelper = shareHelper;
 window.copyGrocery = copyGrocery;
 window.saveWhy = saveWhy;
 
-// ============================================
 // BOOT
-// ============================================
 PinLock.init();
 
-// Service worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').catch(() => {});

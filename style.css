@@ -1146,3 +1146,287 @@ textarea::placeholder { color: var(--text-tertiary); }
 /* hide utility (already defined but ensure) */
 .hidden { display: none !important; }
 
+
+/* ===== v6 ADDITIONS ===== */
+
+/* Meal card with sub-items */
+.meal-card {
+  background: var(--bg-card);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+}
+.meal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 0.5px solid var(--border);
+}
+.meal-header-left {
+  flex: 1;
+  min-width: 0;
+}
+.meal-slot-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-weight: 600;
+}
+.meal-slot-time {
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+.meal-name {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 4px 0 6px;
+  color: var(--text);
+}
+.meal-macros-line {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.meal-macros-line strong {
+  color: var(--text);
+  font-weight: 600;
+}
+.meal-gap-hint {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+  font-style: italic;
+}
+.meal-swap-btn-large {
+  background: var(--bg-input);
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  font-size: 18px;
+  color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-left: 8px;
+  transition: transform 0.1s, background 0.15s;
+}
+.meal-swap-btn-large:active {
+  transform: scale(0.92);
+  background: var(--accent);
+  color: white;
+}
+
+/* Sub-item rows */
+.sub-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 4px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.1s;
+  gap: 10px;
+}
+.sub-item:active { background: var(--bg-input); }
+.sub-item.done .sub-text { text-decoration: line-through; color: var(--text-tertiary); }
+.sub-item.done .sub-checkbox {
+  background: var(--success);
+  border-color: var(--success);
+}
+.sub-item.done .sub-checkbox::after {
+  content: '✓';
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+}
+.sub-checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-input);
+}
+.sub-text {
+  flex: 1;
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.4;
+}
+.sub-swap-tag {
+  background: var(--accent);
+  color: white;
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-left: 4px;
+}
+.sub-swap-btn {
+  background: var(--bg-elevated);
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.1s, background 0.15s;
+}
+.sub-swap-btn:active {
+  transform: scale(0.92);
+  background: var(--accent);
+  color: white;
+}
+
+/* Cuisine filter row */
+.cuisine-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 0.5px solid var(--border);
+}
+.cuisine-filter-btn {
+  background: var(--bg-input);
+  border: 1px solid transparent;
+  color: var(--text);
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.cuisine-filter-btn.active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.meal-swap-macros {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.meal-swap-macros span {
+  background: var(--bg-elevated);
+  padding: 2px 8px;
+  border-radius: 8px;
+}
+
+/* Exercise item with prescription */
+.exercise-item .task-content {
+  min-width: 0;
+}
+.exercise-prescription {
+  font-size: 12px;
+  color: var(--accent);
+  font-weight: 600;
+  margin: 4px 0 2px;
+  letter-spacing: 0.2px;
+}
+.exercise-log-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 0.5px solid var(--border);
+}
+.log-label {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.log-input {
+  flex: 1;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  max-width: 100px;
+}
+.log-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Per-exercise swap button */
+.task-action-btn {
+  background: var(--bg-input);
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 16px;
+  color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-left: 4px;
+  transition: transform 0.1s, background 0.15s;
+}
+.task-action-btn:active {
+  transform: scale(0.92);
+  background: var(--accent);
+  color: white;
+}
+
+/* Gym timing selector */
+.gym-timing-select {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-secondary) 50%), linear-gradient(135deg, var(--text-secondary) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+.gym-timing-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Class custom input */
+.class-custom-input {
+  width: 100%;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  margin-top: 8px;
+}
+.class-custom-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+

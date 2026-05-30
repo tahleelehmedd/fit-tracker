@@ -81,7 +81,7 @@
           <div class="phase-day" id="dash-phase-day">Day 1/87</div>
         </div>
         <div class="phase-progress-bar"><div class="phase-progress-fill" id="phase-progress-fill"></div></div>
-        <p class="phase-meta" id="dash-phase-meta">Days remaining to Aug 20</p>
+        <p class="phase-meta" id="dash-phase-meta">Days remaining</p>
       </div>
 
       <div class="dash-grid">
@@ -119,13 +119,13 @@
       </div>
 
       <div class="card">
-        <h2 class="card-title">Sleep & sciatica <span class="card-meta">Last 14 days</span></h2>
+        <h2 class="card-title">Sleep &amp; discomfort <span class="card-meta">Last 14 days</span></h2>
         <canvas id="sleep-chart" height="140"></canvas>
       </div>
 
       <div class="card checkpoint-card" id="checkpoint-card">
         <div class="card-eyebrow">Next Checkpoint</div>
-        <h2 class="card-title" id="checkpoint-title">Week 4 Reassessment</h2>
+        <h2 class="card-title" id="checkpoint-title">Re-assessment</h2>
         <p class="checkpoint-countdown" id="checkpoint-countdown"></p>
         <ul class="checkpoint-tasks" id="checkpoint-tasks"></ul>
       </div>
@@ -176,7 +176,7 @@
           <span class="slider-value" id="mood-value">5</span>
         </div>
         <div class="slider-row">
-          <label>Sciatica</label>
+          <label>Discomfort</label>
           <input type="range" min="0" max="10" value="0" id="sciatica-slider">
           <span class="slider-value sciatica-value" id="sciatica-value">0</span>
         </div>
@@ -190,22 +190,30 @@
       <div class="card">
         <h2 class="card-title">Workout <span class="card-meta" id="workout-meta"></span></h2>
         <div class="workout-header">
-          <div class="workout-type" id="workout-type-display">🦵 Lower Body & Glutes</div>
-          <button class="link-btn" id="change-workout-btn">Change</button>
+          <div class="workout-type" id="workout-type-display">🦵 Lower Body &amp; Glutes</div>
         </div>
         <p class="workout-focus" id="workout-focus"></p>
         <div id="workout-list"></div>
         <div id="class-options" class="hidden">
           <p class="hint-text">Pick today's class:</p>
           <div id="class-options-list"></div>
+          <div id="class-custom-wrap" class="hidden">
+            <input type="text" id="class-custom-input" placeholder="Type the class name..." class="class-custom-input">
+          </div>
         </div>
       </div>
 
       <div class="card">
+        <h2 class="card-title">Gym timing</h2>
+        <p class="hint-text">When you train today — meals will reorder</p>
+        <select id="gym-timing-select" class="gym-timing-select"></select>
+      </div>
+
+      <div class="card">
         <h2 class="card-title">Nutrition <span class="card-meta" id="nutrition-meta"></span></h2>
-        <p class="hint-text">Tap ⇆ to swap a meal · macros shown</p>
+        <p class="hint-text">Tap a sub-item to check off · ⇆ to swap</p>
         <div id="nutrition-list"></div>
-        <p class="card-footer" id="macros-footer">Target: 1,750 kcal · 160g protein · halal</p>
+        <p class="card-footer" id="macros-footer">Target: 1,750 kcal · 160g protein</p>
       </div>
 
       <div class="action-row">
@@ -223,7 +231,7 @@
       </div>
 
       <div class="card">
-        <h2 class="card-title">Symptom log <span class="card-meta">If sciatica flared or anything off</span></h2>
+        <h2 class="card-title">Flags / Symptoms <span class="card-meta">Anything off today?</span></h2>
         <textarea id="symptom-input" placeholder="What happened, when, what triggered it..."></textarea>
       </div>
 
@@ -254,8 +262,8 @@
         <details class="ref-details"><summary>Carbs (controlled)</summary><p>Oats, brown rice, quinoa, whole grain bread (1-2 slices), sweet potato, 1 multigrain roti per meal max.</p></details>
         <details class="ref-details"><summary>Fats (good fats)</summary><p>Extra virgin olive oil (2-3 tbsp/day), avocado (½/day), walnuts, almonds, chia, flax seeds.</p></details>
         <details class="ref-details"><summary>Vegetables (unlimited)</summary><p>All leafy greens, broccoli, cauliflower, zucchini, eggplant, bell peppers, tomato, cucumber, onion, garlic.</p></details>
-        <details class="ref-details"><summary>Fruits (1-2/day max)</summary><p>Berries best · apple, pear, kiwi, orange · banana only pre-workout. AVOID mango, grapes (high fructose).</p></details>
-        <details class="ref-details"><summary>NEVER (12 weeks strict)</summary><p>Fried · white sugar/desserts · soft drinks · fruit juice · white bread/rice · packaged snacks · fast food · alcohol · processed meats.</p></details>
+        <details class="ref-details"><summary>Fruits (1-2/day max)</summary><p>Berries best · apple, pear, kiwi, orange · banana only pre-workout.</p></details>
+        <details class="ref-details"><summary>Avoid (12 weeks strict)</summary><p>Fried · white sugar/desserts · soft drinks · fruit juice · white bread/rice · packaged snacks · fast food · alcohol · processed meats.</p></details>
       </div>
 
     </section>
@@ -265,8 +273,8 @@
 
       <div class="card">
         <h2 class="card-title">My goal</h2>
-        <p class="goal-text">Lose <strong>8-10 kg</strong> by <strong>20 Aug 2026</strong></p>
-        <p class="goal-text">Reverse Grade 1 fatty liver · Normalize ALT below 45</p>
+        <p class="goal-text">Lose <strong>8 kg</strong> by <strong>20 Aug 2026</strong></p>
+        <p class="goal-text">Build strength, improve mobility, feel better.</p>
         <div class="goal-progress" id="goal-progress"></div>
       </div>
 
@@ -281,14 +289,16 @@
       </div>
 
       <div class="card">
-        <h2 class="card-title">Sciatica safety</h2>
-        <details class="ref-details"><summary>Exercises that HELP</summary><p>Dead hang from bar · glute bridge · bird dog · piriformis stretch · incline walking · swimming · cycling.</p></details>
-        <details class="ref-details"><summary>Exercises to AVOID</summary><p>Seated leg press · seated cable row · heavy deadlifts · sit-ups · Russian twists · high-impact running.</p></details>
+        <h2 class="card-title">Movement notes</h2>
+        <details class="ref-details"><summary>Lower-back-friendly exercises</summary><p>Dead hang from bar · glute bridge · bird dog · hip thrust · incline walking · swimming · cycling.</p></details>
+        <details class="ref-details"><summary>Movements to be careful with</summary><p>Seated leg press · seated cable row · heavy deadlifts · sit-ups · Russian twists · high-impact running.</p></details>
       </div>
 
       <div class="card">
         <h2 class="card-title">Data</h2>
-        <button class="btn btn-secondary" id="export-btn">📤 Export all data (JSON)</button>
+        <p class="hint-text">Back up your data regularly. It's stored only on this device.</p>
+        <button class="btn btn-primary" id="backup-btn">💾 Backup all data</button>
+        <button class="btn btn-secondary" id="export-btn" style="margin-top: 8px;">📤 Export (same as backup)</button>
       </div>
 
     </section>
@@ -312,19 +322,30 @@
       <h3 id="meal-swap-title">Swap meal</h3>
       <button class="modal-close" onclick="closeMealSwap()" aria-label="Close">×</button>
     </div>
-    <p class="modal-hint">Tap any option to use it today</p>
+    <p class="modal-hint">Filter by cuisine, tap to use it today</p>
+    <div id="meal-swap-filter" class="cuisine-filter-row"></div>
     <div id="meal-swap-list"></div>
   </div>
 </div>
 
-<div id="workout-swap-modal" class="modal hidden">
+<div id="component-swap-modal" class="modal hidden">
   <div class="modal-content">
     <div class="modal-header">
-      <h3>Change workout</h3>
-      <button class="modal-close" onclick="closeWorkoutSwap()" aria-label="Close">×</button>
+      <h3 id="component-swap-title">Swap component</h3>
+      <button class="modal-close" onclick="closeComponentSwap()" aria-label="Close">×</button>
     </div>
-    <p class="modal-hint">Pick a different workout for today</p>
-    <div id="workout-swap-list"></div>
+    <p class="modal-hint">Pick a replacement for this item</p>
+    <div id="component-swap-list"></div>
+  </div>
+</div>
+
+<div id="exercise-swap-modal" class="modal hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="exercise-swap-title">Swap exercise</h3>
+      <button class="modal-close" onclick="closeExerciseSwap()" aria-label="Close">×</button>
+    </div>
+    <div id="exercise-swap-list"></div>
   </div>
 </div>
 
@@ -339,6 +360,9 @@
       </div>
     </div>
     <div id="helper-content"></div>
+    <div style="text-align: center; padding: 20px 0 8px;">
+      <button class="btn btn-secondary" onclick="closeHelper()">Done</button>
+    </div>
   </div>
 </div>
 
@@ -352,6 +376,9 @@
       </div>
     </div>
     <div id="grocery-content"></div>
+    <div style="text-align: center; padding: 20px 0 8px;">
+      <button class="btn btn-secondary" onclick="closeGrocery()">Done</button>
+    </div>
   </div>
 </div>
 
@@ -362,18 +389,8 @@
       <button class="modal-close" onclick="closeWhy()" aria-label="Close">×</button>
     </div>
     <p class="modal-hint">A short, honest reason. You'll see this every time you open the app.</p>
-    <textarea id="why-input" placeholder="To reverse fatty liver, fit my clothes again, be healthy for my family..."></textarea>
+    <textarea id="why-input" placeholder="To feel strong, fit my clothes, be there for my family..."></textarea>
     <button class="btn btn-primary" style="margin-top: 12px;" onclick="saveWhy()">Save</button>
-  </div>
-</div>
-
-<div id="exercise-modal" class="modal hidden">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h3 id="exercise-modal-title">Exercise</h3>
-      <button class="modal-close" onclick="closeExerciseModal()" aria-label="Close">×</button>
-    </div>
-    <div id="exercise-modal-body"></div>
   </div>
 </div>
 

@@ -298,7 +298,8 @@
         <h2 class="card-title">Data</h2>
         <p class="hint-text">Back up your data regularly. It's stored only on this device.</p>
         <button class="btn btn-primary" id="backup-btn">💾 Backup all data</button>
-        <button class="btn btn-secondary" id="import-btn" style="margin-top: 8px;">📥 Restore from backup</button>
+        <button class="btn btn-secondary" id="paste-restore-btn" style="margin-top: 8px;">📋 Restore — paste JSON</button>
+        <button class="btn btn-secondary" id="import-btn" style="margin-top: 8px;">📥 Restore — pick file</button>
         <input type="file" id="import-file-input" accept=".json,application/json" style="display: none;">
         <button class="btn btn-secondary" id="export-btn" style="margin-top: 8px;">📤 Export (same as backup)</button>
       </div>
@@ -393,6 +394,21 @@
     <p class="modal-hint">A short, honest reason. You'll see this every time you open the app.</p>
     <textarea id="why-input" placeholder="To feel strong, fit my clothes, be there for my family..."></textarea>
     <button class="btn btn-primary" style="margin-top: 12px;" onclick="saveWhy()">Save</button>
+  </div>
+</div>
+
+<div id="paste-restore-modal" class="modal hidden">
+  <div class="modal-content modal-large">
+    <div class="modal-header">
+      <h3>Restore — paste JSON</h3>
+      <button class="modal-close" onclick="closePasteRestore()" aria-label="Close">×</button>
+    </div>
+    <p class="modal-hint">Open your backup JSON file (Notes, email, Files app), copy ALL the text, then paste here.</p>
+    <textarea id="paste-restore-input" placeholder='Paste the JSON here... e.g. {"fit:2026-05-25":{...}}' style="min-height: 200px; font-family: monospace; font-size: 12px;"></textarea>
+    <div style="display: flex; gap: 8px; margin-top: 12px;">
+      <button class="btn btn-primary" onclick="restoreFromPaste()" style="flex: 1;">Restore</button>
+      <button class="btn btn-secondary" onclick="closePasteRestore()" style="flex: 1;">Cancel</button>
+    </div>
   </div>
 </div>
 

@@ -1724,6 +1724,9 @@ function bindAppEvents() {
   if (backupBtn) backupBtn.addEventListener('click', exportAllData);
 
   // Import data from JSON backup
+  const pasteBtn = document.getElementById('paste-restore-btn');
+  if (pasteBtn) pasteBtn.addEventListener('click', openPasteRestore);
+
   const importBtn = document.getElementById('import-btn');
   const importInput = document.getElementById('import-file-input');
   if (importBtn && importInput) {
@@ -1734,7 +1737,7 @@ function bindAppEvents() {
         if (confirm('Restore data from this backup? Any existing data will be merged (new data wins on conflicts).')) {
           importData(file);
         }
-        e.target.value = ''; // reset so same file can be re-selected
+        e.target.value = '';
       }
     });
   }
@@ -1771,39 +1774,67 @@ function importData(file) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = function(e) {
-    try {
-      const data = JSON.parse(e.target.result);
-      let imported = 0;
-      let skipped = 0;
-
-      Object.entries(data).forEach(([key, value]) => {
-        // Only import keys that look like our data
-        if (!key.startsWith('fit:') && !key.startsWith('meal-override:') && !key.startsWith('comp-swap:') && !key.startsWith('fit-backup:')) {
-          skipped++;
-          return;
-        }
-        try {
-          const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
-          localStorage.setItem(key, stringValue);
-          imported++;
-        } catch (err) {
-          skipped++;
-        }
-      });
-
-      showToast(`✓ Restored ${imported} entries`);
-      setTimeout(() => {
-        state = loadDay(currentDate) || getDefaultState();
-        render();
-      }, 500);
-    } catch (err) {
-      alert('Could not read backup file. Make sure it\'s the JSON file exported from the app.\n\nError: ' + err.message);
-    }
+    restoreFromJSONString(e.target.result);
   };
   reader.onerror = function() {
     alert('Could not read the file. Please try again.');
   };
   reader.readAsText(file);
+}
+
+function restoreFromJSONString(jsonString) {
+  try {
+    const data = JSON.parse(jsonString);
+    let imported = 0;
+    let skipped = 0;
+
+    Object.entries(data).forEach(([key, value]) => {
+      if (!key.startsWith('fit:') && !key.startsWith('meal-override:') && !key.startsWith('comp-swap:') && !key.startsWith('fit-backup:')) {
+        skipped++;
+        return;
+      }
+      try {
+        const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
+        localStorage.setItem(key, stringValue);
+        imported++;
+      } catch (err) {
+        skipped++;
+      }
+    });
+
+    if (imported === 0) {
+      alert('No valid entries found. Make sure you pasted the complete JSON from your backup file.');
+      return;
+    }
+    showToast(`✓ Restored ${imported} entries`);
+    closePasteRestore();
+    setTimeout(() => {
+      state = loadDay(currentDate) || getDefaultState();
+      render();
+    }, 500);
+  } catch (err) {
+    alert('Could not parse the JSON. Make sure you copied the COMPLETE text including the outer { and }.\n\nError: ' + err.message);
+  }
+}
+
+function openPasteRestore() {
+  document.getElementById('paste-restore-input').value = '';
+  document.getElementById('paste-restore-modal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('paste-restore-input').focus(), 100);
+}
+
+function closePasteRestore() {
+  document.getElementById('paste-restore-modal').classList.add('hidden');
+}
+
+function restoreFromPaste() {
+  const text = document.getElementById('paste-restore-input').value.trim();
+  if (!text) {
+    alert('Please paste the JSON text first.');
+    return;
+  }
+  if (!confirm('Restore data from this paste? Any existing data with same keys will be overwritten.')) return;
+  restoreFromJSONString(text);
 }
 
 // Expose closers for inline onclick
@@ -1817,6 +1848,8 @@ window.printHelper = printHelper;
 window.shareHelper = shareHelper;
 window.copyGrocery = copyGrocery;
 window.saveWhy = saveWhy;
+window.closePasteRestore = closePasteRestore;
+window.restoreFromPaste = restoreFromPaste;
 
 // BOOT
 PinLock.init();
